@@ -644,7 +644,9 @@ rpcs::dispatch(djob_t *j)
 
 // rpcs::dispatch calls this when an RPC request arrives.
 // checks to see if an RPC with xid from clt_nonce has already been received.
-// if not, remembers the request.
+// if not, remembers the request in reply_window_.
+// deletes remembered requests less than xid_rep, which is the
+// first xid for which the client says it is still waiting for a reply.
 // returns one of:
 //   NEW: never seen this xid before.
 //   INPROGRESS: seen this xid, and still processing it.

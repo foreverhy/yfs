@@ -274,6 +274,10 @@ class rpcs : public chanmgr {
 
 	private:
 
+        // state about an in-progress or completed RPC, for at-most-once.
+        // if cb_present is true, then the RPC is complete and a reply
+        // has been sent; in that case buf points to a copy of the reply,
+        // and sz holds the size of the reply.
 	struct reply_t {
 		reply_t (unsigned int _xid) {
 			xid = _xid;
@@ -292,6 +296,7 @@ class rpcs : public chanmgr {
 
 	// provide at most once semantics by maintaining a window of replies
 	// per client that that client hasn't acknowledged receiving yet.
+        // indexed by client nonce.
 	std::map<unsigned int, std::list<reply_t> > reply_window_;
 
 	void free_reply_window(void);
