@@ -10,22 +10,22 @@ LAB7GE=$(shell expr $(LAB) \>\= 7)
 CXXFLAGS =  -g -MMD -Wall -I. -I$(RPC) -DLAB=$(LAB) -DSOL=$(SOL) -D_FILE_OFFSET_BITS=64
 FUSEFLAGS= -D_FILE_OFFSET_BITS=64 -DFUSE_USE_VERSION=25 -I/usr/local/include/fuse -I/usr/include/fuse
 ifeq ($(shell uname -s),Darwin)
-MACFLAGS= -D__FreeBSD__=10
+  MACFLAGS= -D__FreeBSD__=10
 else
-MACFLAGS=
+  MACFLAGS=
 endif
 LDFLAGS = -L. -L/usr/local/lib
 LDLIBS = -lpthread 
 ifeq ($(LAB2GE),1)
-ifeq ($(shell uname -s),Darwin)
-ifeq ($(shell sw_vers -productVersion | sed -e "s/.*\(10\.[0-9]\).*/\1/"),10.6)
-LDLIBS += -lfuse_ino64
-else
-LDLIBS += -lfuse
-endif
-else
-LDLIBS += -lfuse
-endif
+  ifeq ($(shell uname -s),Darwin)
+    ifeq ($(shell sw_vers -productVersion | sed -e "s/.*\(10\.[0-9]\).*/\1/"),10.6)
+      LDLIBS += -lfuse_ino64
+    else
+      LDLIBS += -lfuse
+    endif
+  else
+    LDLIBS += -lfuse
+  endif
 endif
 LDLIBS += $(shell test -f `gcc -print-file-name=librt.so` && echo -lrt)
 LDLIBS += $(shell test -f `gcc -print-file-name=libdl.so` && echo -ldl)
@@ -66,35 +66,35 @@ lock_demo : $(patsubst %.cc,%.o,$(lock_demo)) rpc/librpc.a
 
 lock_tester=lock_tester.cc lock_client.cc
 ifeq ($(LAB4GE),1)
-lock_tester += lock_client_cache.cc
+  lock_tester += lock_client_cache.cc
 endif
 ifeq ($(LAB7GE),1)
-lock_tester+=rsm_client.cc handle.cc lock_client_cache_rsm.cc
+  lock_tester+=rsm_client.cc handle.cc lock_client_cache_rsm.cc
 endif
 lock_tester : $(patsubst %.cc,%.o,$(lock_tester)) rpc/librpc.a
 
 lock_server=lock_server.cc lock_smain.cc
 ifeq ($(LAB4GE),1)
-lock_server+=lock_server_cache.cc handle.cc
+  lock_server+=lock_server_cache.cc handle.cc
 endif
 ifeq ($(LAB6GE),1)
-lock_server+= $(rsm_files)
+  lock_server+= $(rsm_files)
 endif
 ifeq ($(LAB7GE),1)
-lock_server+= lock_server_cache_rsm.cc
+  lock_server+= lock_server_cache_rsm.cc
 endif
 
 lock_server : $(patsubst %.cc,%.o,$(lock_server)) rpc/librpc.a
 
 yfs_client=yfs_client.cc extent_client.cc fuse.cc
 ifeq ($(LAB3GE),1)
-yfs_client += lock_client.cc
+  yfs_client += lock_client.cc
 endif
 ifeq ($(LAB7GE),1)
-yfs_client += rsm_client.cc lock_client_cache_rsm.cc
+  yfs_client += rsm_client.cc lock_client_cache_rsm.cc
 endif
 ifeq ($(LAB4GE),1)
-yfs_client += lock_client_cache.cc
+  yfs_client += lock_client_cache.cc
 endif
 yfs_client : $(patsubst %.cc,%.o,$(yfs_client)) rpc/librpc.a
 
