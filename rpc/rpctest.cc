@@ -271,7 +271,7 @@ concurrent_test(int nt)
 
 	pthread_t th[nt];
 	for(int i = 0; i < nt; i++){
-		ret = pthread_create(&th[i], &attr, client1, (void *) i);
+		ret = pthread_create(&th[i], &attr, client1, (void *) (uintptr_t)i);
 		VERIFY(ret == 0);
 	}
 
@@ -303,7 +303,7 @@ lossy_test()
 	int nt = 1;
 	pthread_t th[nt];
 	for(int i = 0; i < nt; i++){
-		ret = pthread_create(&th[i], &attr, client2, (void *) i);
+		ret = pthread_create(&th[i], &attr, client2, (void *) (uintptr_t)i);
 		VERIFY(ret == 0);
 	}
 	for(int i = 0; i < nt; i++){
