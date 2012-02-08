@@ -647,8 +647,8 @@ rpcs::dispatch(djob_t *j)
 // checks to see if an RPC with xid from clt_nonce has already been received.
 // if not, remembers the request in reply_window_.
 //
-// deletes remembered requests with XIDs less than xid_rep, which is
-// the first xid for which the client says it is still waiting for a reply.
+// deletes remembered requests with XIDs <= xid_rep; the client
+// says it has received a reply for every RPC up through xid_rep.
 // frees the reply_t::buf of each such request.
 //
 // returns one of:
