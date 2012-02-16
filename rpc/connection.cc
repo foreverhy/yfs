@@ -371,13 +371,18 @@ tcpsconn::process_accept()
 
         // garbage collect all dead connections with refcount of 1
         std::map<int, connection *>::iterator i;
-        for (i = conns_.begin(); i != conns_.end(); i++) {
+        for (i = conns_.begin(); i != conns_.end();) {
                 if (i->second->isdead() && i->second->ref() == 1) {
 			jsl_log(JSL_DBG_2, "accept_loop garbage collected fd=%d\n",
 					i->second->channo());
                         i->second->decref();
-                        conns_.erase(i);
-                }
+                        // Careful not to reuse i right after erase. (i++) will
+                        // be evaluated before the erase call because in C++,
+                        // there is a sequence point before a function call.
+                        // See http://en.wikipedia.org/wiki/Sequence_point.
+                        conns_.erase(i++);
+                } else
+                        ++i;
         }
 
 	conns_[ch->channo()] = ch;
