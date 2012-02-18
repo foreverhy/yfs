@@ -90,7 +90,7 @@ getattr(yfs_client::inum inum, struct stat &st)
 //
 void
 fuseserver_getattr(fuse_req_t req, fuse_ino_t ino,
-          struct fuse_file_info *fi)
+                   struct fuse_file_info *fi)
 {
     struct stat st;
     yfs_client::inum inum = ino; // req->in.h.nodeid;
@@ -104,8 +104,22 @@ fuseserver_getattr(fuse_req_t req, fuse_ino_t ino,
     fuse_reply_attr(req, &st, 0);
 }
 
+//
+// Set the attributes of a file. Often used as part of overwriting
+// a file, to set the file length to zero.
+//
+// to_set is a bitmap indicating which attributes to set. You only
+// have to implement the FUSE_SET_ATTR_SIZE bit, which indicates
+// that the size of the file should be changed. The new size is
+// in attr->st_size. If the new size is bigger than the current
+// file size, fill the new bytes with '\0'.
+//
+// On success, call fuse_reply_attr, passing the file's new
+// attributes (from a call to getattr()).
+//
 void
-fuseserver_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, struct fuse_file_info *fi)
+fuseserver_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
+                   int to_set, struct fuse_file_info *fi)
 {
   printf("fuseserver_setattr 0x%x\n", to_set);
   if (FUSE_SET_ATTR_SIZE & to_set) {
@@ -127,17 +141,18 @@ fuseserver_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set
 //
 // Read up to @size bytes starting at byte offset @off in file @ino.
 //
+// Pass the number of bytes actually read to fuse_reply_buf.
+// If there are fewer than @size bytes to read between @off and the
+// end of the file, read just that many bytes. If @off is greater
+// than or equal to the size of the file, read zero bytes.
+//
 // Ignore @fi. 
 // @req identifies this request, and is used only to send a 
 // response back to fuse with fuse_reply_buf or fuse_reply_err.
 //
-// Read should return exactly @size bytes except for EOF or error.
-// In case of EOF, return the actual number of bytes 
-// in the file.
-//
 void
 fuseserver_read(fuse_req_t req, fuse_ino_t ino, size_t size,
-      off_t off, struct fuse_file_info *fi)
+                off_t off, struct fuse_file_info *fi)
 {
   // You fill this in for Lab 2
 #if 0
@@ -164,8 +179,8 @@ fuseserver_read(fuse_req_t req, fuse_ino_t ino, size_t size,
 //
 void
 fuseserver_write(fuse_req_t req, fuse_ino_t ino,
-  const char *buf, size_t size, off_t off,
-  struct fuse_file_info *fi)
+                 const char *buf, size_t size, off_t off,
+                 struct fuse_file_info *fi)
 {
   // You fill this in for Lab 2
 #if 0
@@ -194,7 +209,7 @@ fuseserver_write(fuse_req_t req, fuse_ino_t ino,
 //
 yfs_client::status
 fuseserver_createhelper(fuse_ino_t parent, const char *name,
-     mode_t mode, struct fuse_entry_param *e)
+                        mode_t mode, struct fuse_entry_param *e)
 {
   // In yfs, timeouts are always set to 0.0, and generations are always set to 0
   e->attr_timeout = 0.0;
@@ -206,7 +221,7 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,
 
 void
 fuseserver_create(fuse_req_t req, fuse_ino_t parent, const char *name,
-   mode_t mode, struct fuse_file_info *fi)
+                  mode_t mode, struct fuse_file_info *fi)
 {
   struct fuse_entry_param e;
   yfs_client::status ret;
@@ -290,11 +305,14 @@ int reply_buf_limited(fuse_req_t req, const char *buf, size_t bufsize,
 // Retrieve all the file names / i-numbers pairs
 // in directory @ino. Send the reply using reply_buf_limited.
 //
+// You can ignore @size and @off (except that you must pass
+// them to reply_buf_limited).
+//
 // Call dirbuf_add(&b, name, inum) for each entry in the directory.
 //
 void
 fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
-          off_t off, struct fuse_file_info *fi)
+                   off_t off, struct fuse_file_info *fi)
 {
   yfs_client::inum inum = ino; // req->in.h.nodeid;
   struct dirbuf b;
