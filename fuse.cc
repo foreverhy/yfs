@@ -171,7 +171,9 @@ fuseserver_read(fuse_req_t req, fuse_ino_t ino, size_t size,
 // If @off + @size is greater than the current size of the
 // file, the write should cause the file to grow. If @off is
 // beyond the end of the file, fill the gap with null bytes.
-// 
+//
+// Set the file's mtime to the current time.
+//
 // Ignore @fi.
 //
 // @req identifies this request, and is used only to send a 
@@ -201,6 +203,8 @@ fuseserver_write(fuse_req_t req, fuse_ino_t ino,
 //   Make sure ino indicates a file, not a directory!
 // - Create an empty extent for ino.
 // - Add a <name, ino> entry into @parent.
+// - Change the parent's mtime and ctime to the current time/date
+//   (this may fall naturally out of your extent server code).
 // - On success, store the inum of newly created file into @e->ino, 
 //   and the new file's attribute into @e->attr. Get the file's
 //   attributes with getattr().
@@ -342,6 +346,16 @@ fuseserver_open(fuse_req_t req, fuse_ino_t ino,
   fuse_reply_open(req, fi);
 }
 
+//
+// Create a new directory with name @name in parent directory @parent.
+// Leave new directory's inum in e.ino and attributes in e.attr.
+//
+// The new directory should be empty (no . or ..).
+// 
+// If a file/directory named @name already exists, indicate error EEXIST.
+//
+// Ignore mode.
+//
 void
 fuseserver_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
      mode_t mode)
@@ -362,6 +376,13 @@ fuseserver_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
 #endif
 }
 
+//
+// Remove the file named @name from directory @parent.
+// Free the file's extent.
+// If the file doesn't exist, indicate error ENOENT.
+//
+// Do *not* allow unlinking of a directory.
+//
 void
 fuseserver_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
 {
