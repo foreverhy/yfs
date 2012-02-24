@@ -6,6 +6,8 @@
 #include "extent_client.h"
 #include <vector>
 
+#include "lock_protocol.h"
+#include "lock_client.h"
 
 class yfs_client {
   extent_client *ec;
