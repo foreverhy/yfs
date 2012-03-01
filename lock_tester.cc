@@ -11,11 +11,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "lang/verify.h"
+#include "lock_client_cache.h"
 
 // must be >= 2
 int nt = 6; //XXX: lab1's rpc handlers are blocking. Since rpcs uses a thread pool of 10 threads, we cannot test more than 10 blocking rpc.
 std::string dst;
-lock_client **lc = new lock_client * [nt];
+lock_client_cache **lc = new lock_client_cache * [nt];
 lock_protocol::lockid_t a = 1;
 lock_protocol::lockid_t b = 2;
 lock_protocol::lockid_t c = 3;
@@ -171,8 +172,8 @@ main(int argc, char *argv[])
     }
 
     VERIFY(pthread_mutex_init(&count_mutex, NULL) == 0);
-    printf("simple lock client\n");
-    for (int i = 0; i < nt; i++) lc[i] = new lock_client(dst);
+    printf("cache lock client\n");
+    for (int i = 0; i < nt; i++) lc[i] = new lock_client_cache(dst);
 
     if(!test || test == 1){
       test1();
