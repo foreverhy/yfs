@@ -9,24 +9,19 @@
 #include "tprintf.h"
 
 
-int lock_client_cache::last_port = 0;
-
 lock_client_cache::lock_client_cache(std::string xdst, 
 				     class lock_release_user *_lu)
   : lock_client(xdst), lu(_lu)
 {
-  srand(time(NULL)^last_port);
-  rlock_port = ((rand()%32000) | (0x1 << 10));
-  const char *hname;
-  // VERIFY(gethostname(hname, 100) == 0);
-  hname = "127.0.0.1";
-  std::ostringstream host;
-  host << hname << ":" << rlock_port;
-  id = host.str();
-  last_port = rlock_port;
-  rpcs *rlsrpc = new rpcs(rlock_port);
+  rpcs *rlsrpc = new rpcs(0);
   rlsrpc->reg(rlock_protocol::revoke, this, &lock_client_cache::revoke_handler);
   rlsrpc->reg(rlock_protocol::retry, this, &lock_client_cache::retry_handler);
+
+  const char *hname;
+  hname = "127.0.0.1";
+  std::ostringstream host;
+  host << hname << ":" << rlsrpc->port();
+  id = host.str();
 }
 
 lock_protocol::status
