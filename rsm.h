@@ -13,6 +13,8 @@
 
 
 class rsm : public config_view_change {
+ private:
+  void reg1(int proc, handler *);
  protected:
   std::map<int, handler *> procs;
   config *cfg;
@@ -54,6 +56,7 @@ class rsm : public config_view_change {
   pthread_cond_t recovery_cond;
   pthread_cond_t sync_cond;
 
+  void execute(int procno, std::string req, std::string &r);
   rsm_client_protocol::status client_invoke(int procno, std::string req, 
               std::string &r);
   bool statetransfer(std::string m);
@@ -77,6 +80,162 @@ class rsm : public config_view_change {
   void recovery();
   void commit_change(unsigned vid);
 
+  template<class S, class A1, class R>
+    void reg(int proc, S*, int (S::*meth)(const A1 a1, R &));
+  template<class S, class A1, class A2, class R>
+    void reg(int proc, S*, int (S::*meth)(const A1 a1, const A2 a2, R &));
+  template<class S, class A1, class A2, class A3, class R>
+    void reg(int proc, S*, int (S::*meth)(const A1 a1, const A2 a2, 
+            const A3 a3, R &));
+  template<class S, class A1, class A2, class A3, class A4, class R>
+    void reg(int proc, S*, int (S::*meth)(const A1 a1, const A2 a2, 
+            const A3 a3, const A4 a4, R &));
+  template<class S, class A1, class A2, class A3, class A4, class A5, class R>
+    void reg(int proc, S*, int (S::*meth)(const A1 a1, const A2 a2, 
+            const A3 a3, const A4 a4, 
+            const A5 a5, R &));
 };
+
+template<class S, class A1, class R> void
+  rsm::reg(int proc, S*sob, int (S::*meth)(const A1 a1, R & r))
+{
+  class h1 : public handler {
+  private:
+    S * sob;
+    int (S::*meth)(const A1 a1, R & r);
+  public:
+  h1(S *xsob, int (S::*xmeth)(const A1 a1, R & r))
+      : sob(xsob), meth(xmeth) { }
+    int fn(unmarshall &args, marshall &ret) {
+      A1 a1;
+      R r;
+      args >> a1;
+      VERIFY(args.okdone());
+      int b = (sob->*meth)(a1,r);
+      ret << r;
+      return b;
+    }
+  };
+  reg1(proc, new h1(sob, meth));
+}
+
+template<class S, class A1, class A2, class R> void
+  rsm::reg(int proc, S*sob, int (S::*meth)(const A1 a1, const A2 a2, R & r))
+{
+ class h1 : public handler {
+  private:
+    S * sob;
+    int (S::*meth)(const A1 a1, const A2 a2, R & r);
+  public:
+  h1(S *xsob, int (S::*xmeth)(const A1 a1, const A2 a2, R & r))
+    : sob(xsob), meth(xmeth) { }
+    int fn(unmarshall &args, marshall &ret) {
+      A1 a1;
+      A2 a2;
+      R r;
+      args >> a1;
+      args >> a2;
+      VERIFY(args.okdone());
+      int b = (sob->*meth)(a1,a2,r);
+      ret << r;
+      return b;
+    }
+  };
+  reg1(proc, new h1(sob, meth));
+}
+
+template<class S, class A1, class A2, class A3, class R> void
+  rsm::reg(int proc, S*sob, int (S::*meth)(const A1 a1, const A2 a2, 
+             const A3 a3, R & r))
+{
+ class h1 : public handler {
+  private:
+    S * sob;
+    int (S::*meth)(const A1 a1, const A2 a2, const A3 a3, R & r);
+  public:
+  h1(S *xsob, int (S::*xmeth)(const A1 a1, const A2 a2, const A3 a3, R & r))
+    : sob(xsob), meth(xmeth) { }
+    int fn(unmarshall &args, marshall &ret) {
+      A1 a1;
+      A2 a2;
+      A3 a3;
+      R r;
+      args >> a1;
+      args >> a2;
+      args >> a3;
+      VERIFY(args.okdone());
+      int b = (sob->*meth)(a1,a2,a3,r);
+      ret << r;
+      return b;
+    }
+  };
+  reg1(proc, new h1(sob, meth));
+}
+
+template<class S, class A1, class A2, class A3, class A4, class R> void
+  rsm::reg(int proc, S*sob, int (S::*meth)(const A1 a1, const A2 a2, 
+             const A3 a3, const A4 a4, R & r))
+{
+ class h1 : public handler {
+  private:
+    S * sob;
+    int (S::*meth)(const A1 a1, const A2 a2, const A3 a3, const A4 a4, R & r);
+  public:
+  h1(S *xsob, int (S::*xmeth)(const A1 a1, const A2 a2, const A3 a3, 
+            const A4 a4, R & r))
+    : sob(xsob), meth(xmeth) { }
+    int fn(unmarshall &args, marshall &ret) {
+      A1 a1;
+      A2 a2;
+      A3 a3;
+      A4 a4;
+      R r;
+      args >> a1;
+      args >> a2;
+      args >> a3;
+      args >> a4;
+      VERIFY(args.okdone());
+      int b = (sob->*meth)(a1,a2,a3,a4,r);
+      ret << r;
+      return b;
+    }
+  };
+  reg1(proc, new h1(sob, meth));
+}
+
+
+template<class S, class A1, class A2, class A3, class A4, class A5, class R> void
+  rsm::reg(int proc, S*sob, int (S::*meth)(const A1 a1, const A2 a2, 
+             const A3 a3, const A4 a4, 
+             const A5 a5, R & r))
+{
+ class h1 : public handler {
+  private:
+    S * sob;
+    int (S::*meth)(const A1 a1, const A2 a2, const A3 a3, const A4 a4, 
+       const A5 a5, R & r);
+  public:
+  h1(S *xsob, int (S::*xmeth)(const A1 a1, const A2 a2, const A3 a3, 
+            const A4 a4, const A5 a5, R & r))
+    : sob(xsob), meth(xmeth) { }
+    int fn(unmarshall &args, marshall &ret) {
+      A1 a1;
+      A2 a2;
+      A3 a3;
+      A4 a4;
+      A5 a5;
+      R r;
+      args >> a1;
+      args >> a2;
+      args >> a3;
+      args >> a4;
+      VERIFY(args.okdone());
+      int b = (sob->*meth)(a1,a2,a3,a4,a5,r);
+      ret << r;
+      return b;
+    }
+  };
+  reg1(proc, new h1(sob, meth));
+}
 
 #endif /* rsm_h */
