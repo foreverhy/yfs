@@ -377,7 +377,7 @@ rsm_protocol::transferres &r)
   // Code will be provided in Lab 7
   tprintf("transferreq from %s (%d,%d) vs (%d,%d)\n", src.c_str(), 
 	 last.vid, last.seqno, last_myvs.vid, last_myvs.seqno);
-  if (vid != vid_insync) {
+  if (!insync || vid != vid_insync) {
      return rsm_protocol::BUSY;
   }
   if (stf && last != last_myvs) 
