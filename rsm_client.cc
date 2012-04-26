@@ -80,21 +80,22 @@ rsm_client::init_members()
 {
   printf("rsm_client::init_members get members!\n");
   handle h(primary);
+  std::vector<std::string> new_view;
   VERIFY(pthread_mutex_unlock(&rsm_client_mutex)==0);
   int ret;
   rpcc *cl = h.safebind();
   if (cl) {
-    ret = cl->call(rsm_client_protocol::members, 0, known_mems, 
+    ret = cl->call(rsm_client_protocol::members, 0, new_view, 
                    rpcc::to(1000)); 
   }
   VERIFY(pthread_mutex_lock(&rsm_client_mutex)==0);
   if (cl == 0 || ret != rsm_protocol::OK)
     return false;
-  if (known_mems.size() < 1) {
+  if (new_view.size() < 1) {
     printf("rsm_client::init_members do not know any members!\n");
     VERIFY(0);
   }
-
+  known_mems = new_view;
   primary = known_mems.back();
   known_mems.pop_back();
 
