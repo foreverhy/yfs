@@ -6,6 +6,7 @@
 #include "lock_client.h"
 #include "rpc.h"
 #include "jsl_log.h"
+#include <signal.h>
 #include <arpa/inet.h>
 #include <vector>
 #include <stdlib.h>
@@ -143,12 +144,21 @@ test5(void *x)
   return 0;
 }
 
+static void
+force_exit(int) {
+    exit(0);
+}
+
 int
 main(int argc, char *argv[])
 {
     int r;
     pthread_t th[nt];
     int test = 0;
+
+    // Force the lock_server to exit after 20 minutes
+    signal(SIGALRM, force_exit);
+    alarm(20 * 60);
 
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);

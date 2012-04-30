@@ -2,6 +2,7 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <signal.h>
 #include "lock_server_cache_rsm.h"
 #include "paxos.h"
 #include "rsm.h"
@@ -10,10 +11,19 @@
 
 // Main loop of lock_server
 
+static void
+force_exit(int) {
+    exit(0);
+}
+
 int
 main(int argc, char *argv[])
 {
   int count = 0;
+
+  // Force the lock_server to exit after 20 minutes
+  signal(SIGALRM, force_exit);
+  alarm(20 * 60);
 
   setvbuf(stdout, NULL, _IONBF, 0);
   setvbuf(stderr, NULL, _IONBF, 0);
