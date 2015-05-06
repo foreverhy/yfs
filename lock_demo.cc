@@ -27,4 +27,5 @@ main(int argc, char *argv[])
   lc = new lock_client(dst);
   r = lc->stat(1);
   printf ("stat returned %d\n", r);
+  return 0;
 }

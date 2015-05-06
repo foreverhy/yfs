@@ -20,4 +20,17 @@ lock_server::stat(int clt, lock_protocol::lockid_t lid, int &r)
   return ret;
 }
 
+lock_protocol::status
+lock_server::acquire(int clt, lock_protocol::lockid_t lid, int &r) {
+    printf("acquire request from clt %d\n", clt);
+    locks_.lock(lid);
+    return lock_protocol::OK;
+}
 
+
+lock_protocol::status
+lock_server::release(int clt, lock_protocol::lockid_t lid, int &r){
+    printf("release request from clt %d\n", clt);
+    locks_.unlock(lid);
+    return lock_protocol::OK;
+}

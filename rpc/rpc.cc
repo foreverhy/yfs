@@ -65,6 +65,7 @@
 #include "slock.h"
 
 #include <sys/types.h>
+#include <unistd.h>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 #include <time.h>

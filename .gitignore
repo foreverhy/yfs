@@ -89,3 +89,4 @@ Session.vim
 
 .idea/
 CMakeLists.txt
+*.d
