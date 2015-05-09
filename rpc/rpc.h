@@ -285,6 +285,16 @@ class rpcs : public chanmgr {
 			buf = NULL;
 			sz = 0;
 		}
+		reply_t (reply_t &&rhs) {
+			if (&rhs == this) {
+				return;
+			}
+			xid = rhs.xid;
+			cb_present = rhs.cb_present;
+			buf = rhs.buf;
+			rhs.buf = nullptr;
+			sz = rhs.sz;
+		}
 		unsigned int xid;
 		bool cb_present; // whether the reply buffer is valid
 		char *buf;      // the reply buffer
