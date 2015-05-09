@@ -695,11 +695,13 @@ rpcs::checkduplicate_and_update(unsigned int clt_nonce, unsigned int xid,
     if (it == replys.end() && NEW == ret) {
         replys.push_back(reply_t(xid));
     }
-    while (!replys.empty() && replys.front().xid <= xid_rep){
+    while (!replys.empty() && replys.front().xid < xid_rep){
         free(replys.front().buf);
         replys.pop_front();
     }
-    replys.push_front(reply_t(xid_rep));
+	if (replys.empty() || replys.front().xid > xid_rep){
+		replys.push_front(reply_t(xid_rep));
+	}
 	return ret;
 }
 
