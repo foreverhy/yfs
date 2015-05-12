@@ -1,5 +1,6 @@
 #include "rpc.h"
 #include <arpa/inet.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "extent_server.h"
@@ -7,30 +8,39 @@
 // Main loop of extent server
 
 int
-main(int argc, char *argv[])
-{
-  int count = 0;
+main(int argc, char *argv[]) {
+    int count = 0;
 
-  if(argc != 2){
-    fprintf(stderr, "Usage: %s port\n", argv[0]);
-    exit(1);
-  }
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s port\n", argv[0]);
+        exit(1);
+    }
 
-  setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stdout, NULL, _IONBF, 0);
 
-  char *count_env = getenv("RPC_COUNT");
-  if(count_env != NULL){
-    count = atoi(count_env);
-  }
+    char *count_env = getenv("RPC_COUNT");
+    if (count_env != NULL) {
+        count = atoi(count_env);
+    }
 
-  rpcs server(atoi(argv[1]), count);
-  extent_server ls;
+    rpcs server(atoi(argv[1]), count);
+    extent_server ls;
+    // unit tests
+    int ret;
+    ls.put(4, "hahaha", ret);
+    std::string a;
+    ls.get(4, a);
+    printf("%s\n", a.data());
+    ls.put(4, "xxhaha", ret);
+    ls.get(4, a);
+    printf("%s\n", a.data());
+    // end tests
 
-  server.reg(extent_protocol::get, &ls, &extent_server::get);
-  server.reg(extent_protocol::getattr, &ls, &extent_server::getattr);
-  server.reg(extent_protocol::put, &ls, &extent_server::put);
-  server.reg(extent_protocol::remove, &ls, &extent_server::remove);
+    server.reg(extent_protocol::get, &ls, &extent_server::get);
+    server.reg(extent_protocol::getattr, &ls, &extent_server::getattr);
+    server.reg(extent_protocol::put, &ls, &extent_server::put);
+    server.reg(extent_protocol::remove, &ls, &extent_server::remove);
 
-  while(1)
-    sleep(1000);
+    while (1)
+        sleep(1000);
 }
