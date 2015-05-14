@@ -5,18 +5,23 @@
 #ifndef MIT_6_824_2012_RAII_H
 #define MIT_6_824_2012_RAII_H
 
-#include <mutex>
+#include "lock_client.h"
 
-class scope_mtx{
+class scope_lock{
   public:
-    scope_mtx(std::mutex &mtx): mtx_(mtx) {
-        mtx_.lock();
+    scope_lock(lock_client *cl, lock_protocol::lockid_t lid): cl_(cl), lid_(lid) {
+        cl_->acquire(lid);
     }
-    ~scope_mtx(){
-        mtx_.unlock();
+    void unlock(){
+        cl_->release(lid_);
+    }
+    ~scope_lock(){
+        cl_->release(lid_);
     }
   private:
-    std::mutex &mtx_;
+    lock_client *cl_;
+    lock_protocol::lockid_t lid_;
 };
+
 
 #endif //MIT_6_824_2012_RAII_H

@@ -5,29 +5,56 @@
 
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <mutex>
+#include <memory>
 #include "extent_protocol.h"
 
-class extent_server {
-    struct extent_entry {
-        std::string name_;
-        extent_protocol::attr attr_;
-        extent_entry (const extent_entry &rhs) = delete;
-        extent_entry (std::string &&name): name_(std::move(name)), attr_({0,0,0,0}){}
-        extent_entry (extent_entry &&rhs): name_(std::move(rhs.name_)), attr_(rhs.attr_){}
-        extent_entry& operator=(extent_entry &&rhs){
-            if (&rhs != this){
-                name_ = std::move(rhs.name_);
-                attr_ = rhs.attr_;
-            }
-            return *this;
-        }
-        extent_entry (std::string &&name, unsigned int t): name_(std::move(name)), attr_({t,t,t,t}){}
-        extent_entry (){}
-    };
-    std::mutex mtx_;
-    std::map<extent_protocol::extentid_t, extent_entry> extents_;
 
+struct extent_entry {
+    extent_protocol::extentid_t eid;
+    extent_protocol::extentid_t parent_id; // 0 for not set, 1 for '/'
+    std::string name;
+    extent_protocol::attr attr;
+
+    extent_entry (const extent_entry &rhs):eid(rhs.eid), parent_id(rhs.parent_id), name(rhs.name), attr(rhs.attr){}
+    extent_entry (extent_entry &&rhs):eid(rhs.eid), parent_id(rhs.parent_id), name(std::move(rhs.name)), attr(rhs.attr){}
+    extent_entry& operator=(extent_entry &&rhs){
+        if (&rhs != this){
+            eid = rhs.eid;
+            parent_id = rhs.parent_id;
+            name = std::move(rhs.name);
+            attr = rhs.attr;
+        }
+        return *this;
+    }
+    extent_entry () = default;
+    extent_entry (extent_protocol::extentid_t id, extent_protocol::extentid_t pid, std::string nm)
+           : eid(id), parent_id(pid), name(nm), attr({0,0,0,0}){
+        attr.atime = attr.ctime = attr.mtime = std::time(nullptr);
+    }
+};
+
+struct dir_entry: public extent_entry{
+    std::unordered_map<std::string, extent_protocol::extentid_t> chd;
+    dir_entry(extent_protocol::extentid_t id, extent_protocol::extentid_t pid, std::string nm)
+           : extent_entry(id, pid, nm){}
+};
+
+struct file_entry: public extent_entry{
+    file_entry(extent_protocol::extentid_t id, extent_protocol::extentid_t pid, std::string nm,int sz)
+    : extent_entry(id, pid, nm){
+        attr.size = sz;
+    }
+};
+
+class extent_server {
+    std::mutex mtx_;
+    std::map<extent_protocol::extentid_t, std::shared_ptr<extent_entry> > extents_;
+
+    bool isfile(extent_protocol::extentid_t id){
+        return (id & 0x80000000) != 0;
+    }
   public:
     extent_server();
 

@@ -15,15 +15,20 @@ extent_server::extent_server() { }
 
 int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &) {
     // You fill this in for Lab 2.
+    bool is_file = isfile(id);
     std::unique_lock<std::mutex> m_(mtx_);
     auto iter = extents_.find(id);
     if (iter == extents_.end()){
         // New entry
-        extents_[id] = std::move(extent_entry(std::move(buf), std::time(nullptr)));
+        if (is_file){
+            extents_[id] = std::shared_ptr<extent_entry>(new file_entry(id, 0, buf, 0));
+        } else {
+            extents_[id] = std::shared_ptr<extent_entry>(new dir_entry(id, 0, buf));
+        }
     } else {
         // Old entry, update name and mtime, atime
-        iter->second.name_ = std::move(buf);
-        iter->second.attr_.mtime = iter->second.attr_.atime = std::time(nullptr);
+        iter->second->name = std::move(buf);
+        (iter->second->attr).mtime = (iter->second->attr).atime = std::time(nullptr);
     }
     return extent_protocol::OK;
 }
@@ -33,8 +38,8 @@ int extent_server::get(extent_protocol::extentid_t id, std::string &buf) {
     std::unique_lock<std::mutex> m_(mtx_);
     auto iter = extents_.find(id);
     if (iter != extents_.end()){
-        buf = iter->second.name_;
-        iter->second.attr_.atime = std::time(nullptr);
+        buf = iter->second->name;
+        (iter->second->attr).atime = std::time(nullptr);
         return extent_protocol::OK;
     }
     return extent_protocol::NOENT;
@@ -48,8 +53,7 @@ int extent_server::getattr(extent_protocol::extentid_t id, extent_protocol::attr
     std::unique_lock<std::mutex> m_(mtx_);
     auto it = extents_.find(id);
     if (it != extents_.end()){
-        a = it->second.attr_;
-        m_.unlock();
+        a = it->second->attr;
         return extent_protocol::OK;
     }
     return extent_protocol::NOENT;
@@ -57,6 +61,12 @@ int extent_server::getattr(extent_protocol::extentid_t id, extent_protocol::attr
 
 int extent_server::remove(extent_protocol::extentid_t id, int &) {
     // You fill this in for Lab 2.
-    return extent_protocol::IOERR;
+    std::unique_lock<std::mutex> m_(mtx_);
+    auto it = extents_.find(id);
+    if (it != extents_.end()){
+        extents_.erase(it);
+        return extent_protocol::OK;
+    }
+    return extent_protocol::NOENT;
 }
 
