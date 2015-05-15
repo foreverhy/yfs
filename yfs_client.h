@@ -53,7 +53,9 @@ class yfs_client {
 
     int getdir(inum, dirinfo &);
 
-    yfs_client::status create(inum parent, const std::string &name);
+    yfs_client::status create(inum parent, std::string name, inum &id);
+    bool lookup(inum parent, std::string name, inum &id);
+    yfs_client::status readdir(inum parent, std::map<std::string, extent_protocol::extentid_t> &);
 };
 
 #endif

@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <random>
 
 
 yfs_client::yfs_client(std::string extent_dst, std::string lock_dst) {
@@ -85,6 +86,16 @@ yfs_client::getdir(inum inum, dirinfo &din) {
 }
 
 yfs_client::status
-yfs_client::create(inum parent, const std::string &name) {
+yfs_client::create(inum parent, std::string name, inum &ret) {
+    return ec->create(parent, name, ret);
+}
 
+bool
+yfs_client::lookup(inum parent, std::string name, inum &ret) {
+    return ec->lookup(parent, name, ret);
+}
+
+yfs_client::status
+yfs_client::readdir(inum parent, std::map<std::string, extent_protocol::extentid_t> &ents){
+    return ec->readdir(parent, ents);
 }

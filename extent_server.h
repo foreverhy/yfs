@@ -8,8 +8,17 @@
 #include <unordered_map>
 #include <mutex>
 #include <memory>
+#include <random>
 #include "extent_protocol.h"
+#include "yfs_client.h"
 
+struct dir_ent{
+    std::string name;
+    extent_protocol::extentid_t eid;
+
+    dir_ent(const std::string &nm, extent_protocol::extentid_t id): name(nm), eid(id){}
+    dir_ent(dir_ent &&rhs): name(std::move(rhs.name)), eid(rhs.eid){}
+};
 
 struct extent_entry {
     extent_protocol::extentid_t eid;
@@ -17,33 +26,25 @@ struct extent_entry {
     std::string name;
     extent_protocol::attr attr;
 
-    extent_entry (const extent_entry &rhs):eid(rhs.eid), parent_id(rhs.parent_id), name(rhs.name), attr(rhs.attr){}
-    extent_entry (extent_entry &&rhs):eid(rhs.eid), parent_id(rhs.parent_id), name(std::move(rhs.name)), attr(rhs.attr){}
+    std::list<dir_ent> chd;
+    int n_chd;
+
+    extent_entry (const extent_entry &rhs):eid(rhs.eid), parent_id(rhs.parent_id), name(rhs.name), attr(rhs.attr), n_chd(0){}
+    extent_entry (extent_entry &&rhs):eid(rhs.eid), parent_id(rhs.parent_id), name(std::move(rhs.name)), attr(rhs.attr), n_chd(0){}
     extent_entry& operator=(extent_entry &&rhs){
         if (&rhs != this){
             eid = rhs.eid;
             parent_id = rhs.parent_id;
             name = std::move(rhs.name);
             attr = rhs.attr;
+            n_chd = rhs.n_chd;
         }
         return *this;
     }
     extent_entry () = default;
-    extent_entry (extent_protocol::extentid_t id, extent_protocol::extentid_t pid, std::string nm)
-           : eid(id), parent_id(pid), name(nm), attr({0,0,0,0}){
+    extent_entry (extent_protocol::extentid_t id, extent_protocol::extentid_t pid, std::string nm, int sz = 0)
+           : eid(id), parent_id(pid), name(nm), attr({0,0,0,0}), n_chd(0){
         attr.atime = attr.ctime = attr.mtime = std::time(nullptr);
-    }
-};
-
-struct dir_entry: public extent_entry{
-    std::unordered_map<std::string, extent_protocol::extentid_t> chd;
-    dir_entry(extent_protocol::extentid_t id, extent_protocol::extentid_t pid, std::string nm)
-           : extent_entry(id, pid, nm){}
-};
-
-struct file_entry: public extent_entry{
-    file_entry(extent_protocol::extentid_t id, extent_protocol::extentid_t pid, std::string nm,int sz)
-    : extent_entry(id, pid, nm){
         attr.size = sz;
     }
 };
@@ -51,6 +52,7 @@ struct file_entry: public extent_entry{
 class extent_server {
     std::mutex mtx_;
     std::map<extent_protocol::extentid_t, std::shared_ptr<extent_entry> > extents_;
+    std::mt19937 rand_;
 
     bool isfile(extent_protocol::extentid_t id){
         return (id & 0x80000000) != 0;
@@ -65,13 +67,12 @@ class extent_server {
     int getattr(extent_protocol::extentid_t id, extent_protocol::attr &);
 
     int remove(extent_protocol::extentid_t id, int &);
+
+    int create(extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t  &ret);
+    int lookup(extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t  &ret);
+    int readdir(extent_protocol::extentid_t pid, std::map<std::string, extent_protocol::extentid_t> &ents);
 };
 
-#endif 
-
-
-
-
-
+#endif
 
 

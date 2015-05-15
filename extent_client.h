@@ -7,20 +7,28 @@
 #include "extent_protocol.h"
 #include "rpc.h"
 
+class yfs_client;
+
 class extent_client {
- private:
-  rpcc *cl;
+  private:
+    rpcc *cl;
 
- public:
-  extent_client(std::string dst);
+  public:
+    extent_client(std::string dst);
 
-  extent_protocol::status get(extent_protocol::extentid_t eid, 
-			      std::string &buf);
-  extent_protocol::status getattr(extent_protocol::extentid_t eid, 
-				  extent_protocol::attr &a);
-  extent_protocol::status put(extent_protocol::extentid_t eid, std::string buf);
-  extent_protocol::status remove(extent_protocol::extentid_t eid);
+    extent_protocol::status get(extent_protocol::extentid_t eid,
+                                std::string &buf);
+
+    extent_protocol::status getattr(extent_protocol::extentid_t eid,
+                                    extent_protocol::attr &a);
+
+    extent_protocol::status put(extent_protocol::extentid_t eid, std::string buf);
+
+    extent_protocol::status remove(extent_protocol::extentid_t eid);
+    extent_protocol::status create(extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t &id);
+    bool lookup(extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t &id);
+    extent_protocol::status readdir(extent_protocol::extentid_t , std::map<std::string, extent_protocol::extentid_t> &);
 };
 
-#endif 
+#endif
 
