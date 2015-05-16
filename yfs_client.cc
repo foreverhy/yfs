@@ -12,9 +12,10 @@
 #include <random>
 
 
-yfs_client::yfs_client(std::string extent_dst, std::string lock_dst) {
+yfs_client::yfs_client(std::string extent_dst, std::string lock_dst): mt(std::random_device()()) {
     ec = new extent_client(extent_dst);
 //    lc = new lock_client(lock_dst);
+
 
 }
 
@@ -86,16 +87,16 @@ yfs_client::getdir(inum inum, dirinfo &din) {
 }
 
 yfs_client::status
-yfs_client::create(inum parent, std::string name, inum &ret) {
-    return ec->create(parent, name, ret);
+yfs_client::create(inum parent, std::string name, inum &ino) {
+    return ec->create(parent, name, ino);
 }
 
-bool
-yfs_client::lookup(inum parent, std::string name, inum &ret) {
-    return ec->lookup(parent, name, ret);
+yfs_client::status
+yfs_client::lookup(inum parent, std::string name, inum &ino) {
+    return  ec->lookup(parent, name, ino);
 }
 
 yfs_client::status
 yfs_client::readdir(inum parent, std::map<std::string, extent_protocol::extentid_t> &ents){
-    return ec->readdir(parent, ents);
+    return  ec->readdir(parent, ents);
 }

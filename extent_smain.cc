@@ -26,14 +26,14 @@ main(int argc, char *argv[]) {
     rpcs server(atoi(argv[1]), count);
     extent_server ls;
     // unit tests
-    int ret;
-    ls.put(4, "hahaha", ret);
-    std::string a;
-    ls.get(4, a);
-    printf("%s\n", a.data());
-    ls.put(4, "xxhaha", ret);
-    ls.get(4, a);
-    printf("%s\n", a.data());
+//    int ret;
+//    ls.put(4, "hahaha", ret);
+//    std::string a;
+//    ls.get(4, a);
+//    printf("%s\n", a.data());
+//    ls.put(4, "xxhaha", ret);
+//    ls.get(4, a);
+//    printf("%s\n", a.data());
     // end tests
 
     server.reg(extent_protocol::get, &ls, &extent_server::get);

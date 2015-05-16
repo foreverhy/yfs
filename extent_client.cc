@@ -57,7 +57,7 @@ extent_protocol::status extent_client::create(extent_protocol::extentid_t pid, s
     return ret;
 }
 
-bool extent_client::lookup(extent_protocol::extentid_t pid, std::string name,
+extent_protocol::status extent_client::lookup(extent_protocol::extentid_t pid, std::string name,
                                               extent_protocol::extentid_t &id) {
     return  cl->call(extent_protocol::lookup, pid, name, id);
 }

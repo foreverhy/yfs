@@ -226,8 +226,7 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,
             return ret;
     }
 
-    return getattr(ino, e->attr);
-
+    return getattr(e->ino, e->attr);
 }
 
 void
@@ -273,14 +272,14 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
     e.attr_timeout = 0.0;
     e.entry_timeout = 0.0;
     e.generation = 0;
-    bool found = false;
 
     yfs_client::inum ino = 0;
-    found = yfs->lookup(parent, std::string(name), ino);
+    auto ret = yfs->lookup(parent, std::string(name), ino);
 
     // You fill this in for Lab 2
-    if (found){
+    if (ino > 0){
         getattr(ino, e.attr);
+        e.ino = ino;
         fuse_reply_entry(req, &e);
     } else{
         fuse_reply_err(req, ENOENT);
@@ -341,6 +340,7 @@ fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
     auto ret = yfs->readdir(ino, ents);
     if (ret != extent_protocol::OK){
         fuse_reply_err(req, ENOENT);
+        return;
     }
 
     // You fill this in for Lab 2
@@ -348,7 +348,6 @@ fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
     for (auto &item : ents){
         dirbuf_add(&b, item.first.data(), item.second);
     }
-
 
 
     reply_buf_limited(req, b.p, b.size, off, size);

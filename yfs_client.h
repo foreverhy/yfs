@@ -6,11 +6,13 @@
 #include "raii.h"
 #include "lock_client.h"
 #include <vector>
+#include <random>
 
 
 class yfs_client {
     extent_client *ec;
     lock_client *lc;
+    std::mt19937 mt;
 
   public:
 
@@ -54,7 +56,7 @@ class yfs_client {
     int getdir(inum, dirinfo &);
 
     yfs_client::status create(inum parent, std::string name, inum &id);
-    bool lookup(inum parent, std::string name, inum &id);
+    yfs_client::status lookup(inum parent, std::string name, inum &id);
     yfs_client::status readdir(inum parent, std::map<std::string, extent_protocol::extentid_t> &);
 };
 
