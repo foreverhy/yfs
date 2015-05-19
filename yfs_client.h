@@ -58,6 +58,10 @@ class yfs_client {
     yfs_client::status create(inum parent, std::string name, inum &id);
     yfs_client::status lookup(inum parent, std::string name, inum &id);
     yfs_client::status readdir(inum parent, std::map<std::string, extent_protocol::extentid_t> &);
+    yfs_client::status read(inum ino, std::size_t size, std::size_t off, std::string &buf);
+    yfs_client::status write(inum ino, std::size_t size, std::size_t off, const char *buf);
+    yfs_client::status setattr(inum ino, struct stat *st);
 };
 
 #endif
+

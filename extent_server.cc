@@ -9,10 +9,15 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <ctime>
+#include <fstream>
 
 extent_server::extent_server(): rand_(std::random_device()()){
     extents_[1] = std::make_shared<extent_entry>(1, 0, "", 0);
 }
+
+
+
+const std::string extent_server::rootpath = "/tmp/";
 
 
 int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &ret) {
@@ -20,14 +25,15 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &ret
     printf("=== PUT for %llu: %s\n", id, buf.data());
     std::unique_lock<std::mutex> m_(mtx_);
     auto iter = extents_.find(id);
-    if (iter == extents_.end()){
-        return extent_protocol::NOENT;
-    } else {
-        // Old entry, update name and mtime, atime
-        iter->second->name = buf;
+    if (iter != extents_.end()){
+        // update name and mtime, atime, size
+        iter->second->buf = std::move(buf);
         iter->second->attr.mtime = iter->second->attr.atime = std::time(nullptr);
+        iter->second->attr.size = iter->second->buf.size();
+        ret = iter->second->buf.size();
+        return extent_protocol::OK;
     }
-    return extent_protocol::OK;
+    return extent_protocol::NOENT;
 }
 
 int extent_server::get(extent_protocol::extentid_t id, std::string &buf) {
@@ -36,7 +42,7 @@ int extent_server::get(extent_protocol::extentid_t id, std::string &buf) {
     std::unique_lock<std::mutex> m_(mtx_);
     auto iter = extents_.find(id);
     if (iter != extents_.end()){
-        buf = iter->second->name;
+        buf = iter->second->buf;
         iter->second->attr.atime = std::time(nullptr);
         return extent_protocol::OK;
     }
@@ -142,4 +148,4 @@ int extent_server::readdir(extent_protocol::extentid_t pid, std::map<std::string
 
     return extent_protocol::OK;
 }
-//
+

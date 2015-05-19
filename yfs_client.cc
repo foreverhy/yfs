@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <random>
+#include <cstring>
 
 
 yfs_client::yfs_client(std::string extent_dst, std::string lock_dst): mt(std::random_device()()) {
@@ -99,4 +100,45 @@ yfs_client::lookup(inum parent, std::string name, inum &ino) {
 yfs_client::status
 yfs_client::readdir(inum parent, std::map<std::string, extent_protocol::extentid_t> &ents){
     return  ec->readdir(parent, ents);
+}
+
+
+yfs_client::status yfs_client::read(yfs_client::inum ino, std::size_t size, std::size_t off, std::string &buf) {
+    std::string tmp;
+    auto ret = ec->get(ino, tmp);
+    if (extent_protocol::OK !=  ret){
+        return ret;
+    }
+    buf = std::move(tmp.substr(off, size));
+    return ret;
+}
+
+yfs_client::status yfs_client::write(yfs_client::inum ino, std::size_t size, std::size_t off, const char *cbuf) {
+
+    std::string tmp;
+    auto ret = ec->get(ino, tmp);
+    if (extent_protocol::OK != ret){
+        return ret;
+    }
+
+    tmp.resize(std::max(tmp.size(), off + size), '\0');
+    for (std::size_t i = off, j = 0; j < size; ++i,++j){
+        tmp[i] = cbuf[j];
+    }
+    return ec->put(ino, tmp);
+}
+
+yfs_client::status yfs_client::setattr(inum ino, struct stat *st) {
+    // Update mtime, atime
+    std::string tmp;
+    auto ret = ec->get(ino, tmp);
+    if (OK != ret){
+        return ret;
+    }
+    if (st->st_size < (int)tmp.size()){
+        tmp = tmp.substr(0, st->st_size);
+    } else {
+        tmp += std::string('\0', st->st_size - tmp.size());
+    }
+    return ec->put(ino, tmp);
 }
