@@ -48,6 +48,7 @@ yfs_client::isdir(inum inum) {
 int
 yfs_client::getfile(inum inum, fileinfo &fin) {
     int r = OK;
+    lc_guard lc_(lc, inum);
 
     printf("getfile %016llx\n", inum);
     extent_protocol::attr a;
@@ -87,13 +88,32 @@ yfs_client::getdir(inum inum, dirinfo &din) {
 }
 
 yfs_client::status
-yfs_client::create(inum parent, std::string name, inum &ino) {
-    return ec->create(false, parent, name, ino);
+yfs_client::create(inum parent, std::string name, inum &ino, bool is_dir) {
+    ino = 0;
+    lc_guard(lc, parent);
+    auto ret = lookup(parent, name, ino);
+    if (OK == ret){
+        return EXIST;
+    }
+
+    extent_protocol::attr attr;
+
+    for (int i = 0; i < 10; ++i){
+        if (is_dir){
+            ino = mt() & 0x7FFFFFFF;
+        } else {
+            ino = mt() | 0x80000000;
+        }
+        if (NOENT == ec->getattr(ino, attr)){
+            return ec->create(parent, name, ino);
+        }
+    }
+    return IOERR;
 }
 
 yfs_client::status
 yfs_client::mkdir(inum parent, std::string name, inum &ino) {
-    return ec->create(true, parent, name, ino);
+    return create(parent, name, ino, true);
 }
 
 yfs_client::status
@@ -150,6 +170,7 @@ yfs_client::status yfs_client::write(yfs_client::inum ino, std::size_t size, std
 
 yfs_client::status yfs_client::setattr(inum ino, struct stat *st) {
     // Update mtime, atime
+    lc_guard(lc, ino);
     std::string tmp;
     auto ret = ec->get(ino, tmp);
     if (OK != ret){

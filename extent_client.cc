@@ -50,11 +50,9 @@ extent_client::remove(extent_protocol::extentid_t eid) {
 }
 
 
-extent_protocol::status extent_client::create(bool is_dir, extent_protocol::extentid_t pid, std::string name,
-                                              extent_protocol::extentid_t &id) {
-    extent_protocol::status ret = extent_protocol::OK;
-    ret = cl->call(extent_protocol::create, is_dir, pid, name, id);
-    return ret;
+extent_protocol::status extent_client::create(extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t id){
+    int r;
+    return cl->call(extent_protocol::create, pid, name, id, r);
 }
 
 extent_protocol::status extent_client::lookup(extent_protocol::extentid_t pid, std::string name,

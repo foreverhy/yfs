@@ -25,7 +25,8 @@ class extent_client {
     extent_protocol::status put(extent_protocol::extentid_t eid, std::string buf);
 
     extent_protocol::status remove(extent_protocol::extentid_t eid);
-    extent_protocol::status create(bool is_dir, extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t &id);
+//    extent_protocol::status create(bool is_dir, extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t &id);
+    extent_protocol::status create(extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t id);
     extent_protocol::status lookup(extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t &id);
     extent_protocol::status readdir(extent_protocol::extentid_t , std::map<std::string, extent_protocol::extentid_t> &);
 };

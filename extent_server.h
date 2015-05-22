@@ -58,7 +58,6 @@ class extent_server {
     std::map<extent_protocol::extentid_t, std::shared_ptr<extent_entry> > extents_;
     std::mt19937 rand_;
 
-    static const std::string rootpath;
 
     bool isfile(extent_protocol::extentid_t id){
         return (id & 0x80000000) != 0;
@@ -74,9 +73,9 @@ class extent_server {
 
     int remove(extent_protocol::extentid_t id, int &);
 
-    int create(bool, extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t  &ret);
+    int create(extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t id, int &);
 
-    int lookup(extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t  &ret);
+    int lookup(extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t &ret);
 
     int readdir(extent_protocol::extentid_t pid, std::map<std::string, extent_protocol::extentid_t> &ents);
 

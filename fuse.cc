@@ -132,7 +132,7 @@ fuseserver_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
             getattr(ino, st);
             fuse_reply_attr(req, &st, 0);
         }else {
-            fuse_reply_err(req, ENOSYS);
+            fuse_reply_err(req, ENOENT);
         }
     } else {
         fuse_reply_err(req, ENOSYS);
@@ -222,6 +222,7 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,
     // You fill this in for Lab 2
     yfs_client::inum ino;
     auto ret = yfs->create(parent, std::string(name), ino);
+    printf("%d : RECV INO for %s: %llu\n",ret, name, ino);
     switch (ret) {
         case yfs_client::OK:
             e->ino = ino;
