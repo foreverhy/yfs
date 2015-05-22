@@ -15,9 +15,7 @@
 
 yfs_client::yfs_client(std::string extent_dst, std::string lock_dst): mt(std::random_device()()) {
     ec = new extent_client(extent_dst);
-//    lc = new lock_client(lock_dst);
-
-
+    lc = new lock_client(lock_dst);
 }
 
 yfs_client::inum
@@ -72,6 +70,7 @@ yfs_client::getfile(inum inum, fileinfo &fin) {
 int
 yfs_client::getdir(inum inum, dirinfo &din) {
     int r = OK;
+    lc_guard lc_(lc, inum);
 
     printf("getdir %016llx\n", inum);
     extent_protocol::attr a;
@@ -100,6 +99,7 @@ yfs_client::mkdir(inum parent, std::string name, inum &ino) {
 yfs_client::status
 yfs_client::unlink(inum parent, std::string name){
     inum ino;
+    lc_guard lc_(lc, parent);
     auto ret = lookup(parent, name, ino);
     if (OK != ret){
         return ret;
@@ -133,6 +133,7 @@ yfs_client::status yfs_client::read(yfs_client::inum ino, std::size_t size, std:
 }
 
 yfs_client::status yfs_client::write(yfs_client::inum ino, std::size_t size, std::size_t off, const char *cbuf) {
+    lc_guard lc_(lc, ino);
 
     std::string tmp;
     auto ret = ec->get(ino, tmp);

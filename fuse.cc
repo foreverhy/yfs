@@ -466,6 +466,7 @@ main(int argc, char *argv[]) {
 
     myid = random();
 
+
     yfs = new yfs_client(argv[2], argv[3]);
 
     fuseserver_oper.getattr = fuseserver_getattr;
