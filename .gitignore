@@ -90,3 +90,13 @@ Session.vim
 .idea/
 CMakeLists.txt
 *.d
+
+
+
+extent_server
+lock_demo
+lock_server
+lock_tester
+rpc/rpctest
+yfs_client
+yfs_client.cc.orig
