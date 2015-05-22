@@ -74,7 +74,7 @@ class extent_server {
 
     int remove(extent_protocol::extentid_t id, int &);
 
-    int create(extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t  &ret);
+    int create(bool, extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t  &ret);
 
     int lookup(extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t  &ret);
 

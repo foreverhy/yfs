@@ -69,19 +69,21 @@ int extent_server::remove(extent_protocol::extentid_t id, int &) {
     auto it = extents_.find(id);
     if (it != extents_.end()){
         auto piter = extents_.find(it->second->parent_id);
-        for (auto lstiter = piter->second->chd.begin(); lstiter != piter->second->chd.end(); ++lstiter){
+        std::list<dir_ent> &chdlst = piter->second->chd;
+        for (auto lstiter = chdlst.begin(); lstiter != chdlst.end(); ++lstiter){
             if (lstiter->eid == id){
-                piter->second->chd.erase(lstiter);
+                chdlst.erase(lstiter);
                 break;
             }
         }
+        piter->second->attr.mtime = piter->second->attr.ctime = std::time(nullptr);
         extents_.erase(it);
         return extent_protocol::OK;
     }
     return extent_protocol::NOENT;
 }
 
-int extent_server::create( extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t &ret) {
+int extent_server::create( bool is_dir, extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t &ret) {
 
     std::unique_lock<std::mutex> m_(mtx_);
     auto piter = extents_.find(pid);
@@ -101,11 +103,16 @@ int extent_server::create( extent_protocol::extentid_t pid, std::string name, ex
 
     for (int i = 0; i < 10; ++i){
         auto id = rand_();
-        id |= 0x80000000;
+        if (is_dir){
+            id &= 0x7FFFFFFF;
+        } else {
+            id |= 0x80000000;
+        }
         if (extents_.find(id) == extents_.end()){
-            extents_[id] = std::make_shared<extent_entry>(id, 0, name, 0);
+            extents_[id] = std::make_shared<extent_entry>(id, pid, name, 0);
             ret = id;
             chdlst.insert(lstiter, dir_ent(name, id));
+            piter->second->attr.mtime = piter->second->attr.ctime = std::time(nullptr);
             return extent_protocol::OK;
         }
     }

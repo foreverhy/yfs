@@ -89,7 +89,26 @@ yfs_client::getdir(inum inum, dirinfo &din) {
 
 yfs_client::status
 yfs_client::create(inum parent, std::string name, inum &ino) {
-    return ec->create(parent, name, ino);
+    return ec->create(false, parent, name, ino);
+}
+
+yfs_client::status
+yfs_client::mkdir(inum parent, std::string name, inum &ino) {
+    return ec->create(true, parent, name, ino);
+}
+
+yfs_client::status
+yfs_client::unlink(inum parent, std::string name){
+    inum ino;
+    auto ret = lookup(parent, name, ino);
+    if (OK != ret){
+        return ret;
+    }
+    printf("UNLINK== his ino is %llu\n", ino);
+    if (isdir(ino)){
+        return IOERR;
+    }
+    return ec->remove(ino);
 }
 
 yfs_client::status
