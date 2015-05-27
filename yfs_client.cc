@@ -15,7 +15,7 @@
 
 yfs_client::yfs_client(std::string extent_dst, std::string lock_dst): mt(std::random_device()()) {
     ec = new extent_client(extent_dst);
-    lc = new lock_client(lock_dst);
+    lc = new lock_client_cache(lock_dst);
 }
 
 yfs_client::inum

@@ -4,7 +4,7 @@
 #include <string>
 #include "extent_client.h"
 #include "raii.h"
-#include "lock_client.h"
+#include "lock_client_cache.h"
 #include <vector>
 #include <random>
 
@@ -14,7 +14,7 @@
 
 class yfs_client {
     extent_client *ec;
-    lock_client *lc;
+    lock_client_cache *lc;
     std::mt19937 mt;
 
   public:
