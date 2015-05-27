@@ -65,7 +65,6 @@ lock_client_cache::acquire(lock_protocol::lockid_t lid) {
 
 
     std::unique_lock<std::mutex> m_(rlk->mtx);
-    tprintf("%d ACCQURE::got little mtx %llu, %p nrevoke %d\n", rlock_port, rlk->lid, rlk, rlk->nrevoke);
     mtx_.unlock();
 
     // LOCKED, ACQUIRING, RELEASING wait on lock_cv
@@ -94,7 +93,6 @@ lock_client_cache::release(lock_protocol::lockid_t lid) {
     client_lock *rlk = iter->second;
 
     std::unique_lock<std::mutex> m_(rlk->mtx);
-    tprintf("%d RELEASE::got little mtx %llu, %p nrevoke %d\n", rlock_port, rlk->lid, rlk, rlk->nrevoke);
     mtx_.unlock();
 
 
@@ -105,10 +103,8 @@ lock_client_cache::release(lock_protocol::lockid_t lid) {
     if (rlk->nrevoke){
         rlk->status = client_lock::RELEASING;
         rlk->nrevoke--;
-        tprintf("%d RELEASE::Wake revoke_cv %llu\n", rlock_port, lid);
         rlk->revoke_cv.notify_all();
     } else {
-        tprintf("%d RELEASE::Change state to FREE %llu\n", rlock_port, lid);
         rlk->status = client_lock::FREE;
         rlk->lock_cv.notify_all();
     }
@@ -118,12 +114,10 @@ lock_client_cache::release(lock_protocol::lockid_t lid) {
 rlock_protocol::status
 lock_client_cache::revoke_handler(lock_protocol::lockid_t lid,
                                   int &) {
-    tprintf("%d RECV revoke for %llu\n", rlock_port, lid);
 
     std::unique_lock<std::mutex> mtx_(mtxtb);
     auto iter = rlocktb.find(lid);
     if (iter == rlocktb.end()){
-        tprintf("%d RECV revoke done %llu\n", rlock_port, lid);
         return lock_protocol::OK;
     }
     client_lock *rlk = iter->second;
@@ -131,7 +125,6 @@ lock_client_cache::revoke_handler(lock_protocol::lockid_t lid,
 
     if (client_lock::FREE == rlk->status || client_lock::NONE == rlk->status){
         rlk->status = client_lock::NONE;
-        tprintf("%d RECV revoke done %llu\n",rlock_port, lid);
         return lock_protocol::OK;
     }
 
@@ -139,11 +132,9 @@ lock_client_cache::revoke_handler(lock_protocol::lockid_t lid,
     // Wait when LOCKED or ACQUIRING
     rlk->nrevoke++;
     std::unique_lock<std::mutex> m_(rlk->mtx);
-    tprintf("%d REVOKE::got little mtx %llu, %p nrevoke %d\n", rlock_port, rlk->lid, rlk, rlk->nrevoke);
     mtx_.unlock();
     rlk->revoke_cv.wait(m_, [&](){ return client_lock::RELEASING == rlk->status;});
 
-    tprintf("%d RECV revoke done %llu\n", rlock_port, lid);
     rlk->status = client_lock::NONE;
     rlk->lock_cv.notify_all();
     return lock_protocol::OK;
@@ -162,7 +153,6 @@ lock_client_cache::retry_handler(lock_protocol::lockid_t lid,
     client_lock *rlk = iter->second;
 
     std::unique_lock<std::mutex> m_(rlk->mtx);
-    tprintf("%d RETRY got little mtx %llu\n", rlock_port, lid);
     mtx_.unlock();
 
 //    rlk->status = client_lock::NONE;
@@ -179,6 +169,7 @@ lock_client_cache::~lock_client_cache(){
     for (auto iter = rlocktb.begin(); iter != rlocktb.end(); ++iter) {
         rlk = iter->second;
         int r;
+        tprintf("REMOTE RELEASE %llu\n", rlk->lid);
         cl->call(lock_protocol::release, rlk->lid, id, r);
         delete rlk;
     }

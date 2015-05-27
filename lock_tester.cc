@@ -234,6 +234,7 @@ main(int argc, char *argv[])
 	pthread_join(th[i], NULL);
       }
     }
+    for (int i = 0; i < nt; i++) delete lc[i];
 
     printf ("%s: passed all tests successfully\n", argv[0]);
 
