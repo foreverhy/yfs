@@ -65,10 +65,14 @@
 #include "slock.h"
 
 #include <sys/types.h>
+#include <unistd.h>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 #include <time.h>
 #include <netdb.h>
+
+#include <algorithm>
+#include <utility>
 
 #include "jsl_log.h"
 #include "gettime.h"
@@ -429,6 +433,7 @@ rpcs::rpcs(unsigned int p1, int count)
 	dispatchpool_ = new ThrPool(6,false);
 
 	listener_ = new tcpsconn(this, port_, lossytest_);
+
 }
 
 rpcs::~rpcs()
@@ -556,6 +561,7 @@ rpcs::dispatch(djob_t *j)
 			// if we don't know about this clt_nonce, create a cleanup object
 			if(reply_window_.find(h.clt_nonce) == reply_window_.end()){
 				VERIFY (reply_window_[h.clt_nonce].size() == 0); // create
+                reply_window_[h.clt_nonce].push_back(reply_t(0));
 				jsl_log(JSL_DBG_2,
 						"rpcs::dispatch: new client %u xid %d chan %d, total clients %d\n", 
 						h.clt_nonce, h.xid, c->channo(), (int)reply_window_.size());
@@ -661,9 +667,42 @@ rpcs::checkduplicate_and_update(unsigned int clt_nonce, unsigned int xid,
 		unsigned int xid_rep, char **b, int *sz)
 {
 	ScopedLock rwl(&reply_window_m_);
-
-        // You fill this in for Lab 1.
-	return NEW;
+    decltype((reply_window_[0])) replys = reply_window_[clt_nonce];
+    rpcs::rpcstate_t ret = rpcs::rpcstate_t::NEW;
+    auto it = replys.begin();
+    if (!replys.empty() && xid <= replys.front().xid) {
+        ret = FORGOTTEN;
+        it = replys.end();
+    }
+    for ( ; it != replys.end(); ++it){
+        if (it->xid == xid){
+            switch (it->cb_present){
+                case true:
+                    *b = it->buf;
+                    *sz = it->sz;
+                    ret = DONE;
+                    break;
+                default:
+                    ret = INPROGRESS;
+            }
+            break;
+        } else if (it->xid > xid) {
+            replys.insert(it, reply_t(xid));
+            ret = NEW;
+            break;
+        }
+    }
+    if (it == replys.end() && NEW == ret) {
+        replys.push_back(reply_t(xid));
+    }
+    while (!replys.empty() && replys.front().xid < xid_rep){
+        free(replys.front().buf);
+        replys.pop_front();
+    }
+	if (replys.empty() || replys.front().xid > xid_rep){
+		replys.push_front(reply_t(xid_rep));
+	}
+	return ret;
 }
 
 // rpcs::dispatch calls add_reply when it is sending a reply to an RPC,
@@ -676,6 +715,18 @@ rpcs::add_reply(unsigned int clt_nonce, unsigned int xid,
 		char *b, int sz)
 {
 	ScopedLock rwl(&reply_window_m_);
+    decltype((reply_window_[0])) replys = reply_window_[clt_nonce];
+    std::list<reply_t>::iterator it;
+    for (it = replys.begin(); it != replys.end(); ++it) {
+        if (it->xid == xid){
+            break;
+        }
+    }
+
+    VERIFY(it != replys.end());
+    it->buf = b;
+    it->sz = sz;
+    it->cb_present = true;
         // You fill this in for Lab 1.
 }
 

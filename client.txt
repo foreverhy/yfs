@@ -1,0 +1,33 @@
+acquire
+-------
+NONE	->	ACQUIRING	->	LOCKED/RETRY->NONE
+FREE	->	LOCKED
+LOCKED	->	lock_wait	->	LOCKED/ACQUIRING->LOCKED
+ACQURING->	lock_wait	->	LOCKED/ACQUIRING->LOCKED
+RELEASING->	lock_wait	->	ACQUIRING
+
+
+release
+-------
+NONE	->	NONE/ERROR
+FREE	->	FREE/ERROR
+LOCKED	->	FREE/RELEASING->revoke_notify->NONE
+ACQURING->	ERROR
+RELEASING->	ERROR
+
+revoke
+------
+NONE	->	NONE
+FREE	->	NONE
+LOCKED	->	++nrevoke -> revoke_wait -> RELEASING->NONE
+ACQURING->	++nrevoke -> revoke_wait -> RELEASING->NONE
+RELEASING->	ERROR
+
+retry
+-----
+NONE	->	ACQURING -> ++nretry -> retry_notify -> ACQURING
+FREE	->	ERROR
+LOCKED	->	ERROR
+ACQURING->	ERROR
+RELEASING->	++nretry -> retry_notify -> ACQURING
+	
