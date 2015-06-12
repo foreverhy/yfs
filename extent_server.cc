@@ -23,7 +23,7 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &ret
     auto iter = extents_.find(id);
     if (iter != extents_.end()){
         // update name and mtime, atime, size
-        iter->second->buf = std::move(buf);
+        iter->second->buf = buf;
         iter->second->attr.mtime = iter->second->attr.atime = std::time(nullptr);
         iter->second->attr.size = iter->second->buf.size();
         ret = iter->second->buf.size();

@@ -4,14 +4,25 @@
 #define extent_client_h
 
 #include <string>
+#include <map>
+#include <mutex>
 #include "extent_protocol.h"
 #include "rpc.h"
 
 class yfs_client;
 
 class extent_client {
-  private:
     rpcc *cl;
+
+    struct extent_cache {
+        extent_protocol::extentid_t id;
+        extent_protocol::attr attr;
+        std::string buf;
+        bool modified;
+    };
+    
+    std::map<extent_protocol::extentid_t, extent_cache> cache_;
+    std::mutex cache_mtx_;
 
   public:
     extent_client(std::string dst);
