@@ -101,6 +101,7 @@ lock_client_cache::release(lock_protocol::lockid_t lid) {
     }
 
     if (rlk->nrevoke){
+        lu->dorelease(lid);
         rlk->status = client_lock::RELEASING;
         rlk->nrevoke--;
         rlk->revoke_cv.notify_all();
@@ -124,6 +125,7 @@ lock_client_cache::revoke_handler(lock_protocol::lockid_t lid,
 
 
     if (client_lock::FREE == rlk->status || client_lock::NONE == rlk->status){
+        lu->dorelease(rlk->lid);
         rlk->status = client_lock::NONE;
         return lock_protocol::OK;
     }
@@ -170,6 +172,7 @@ lock_client_cache::~lock_client_cache(){
         rlk = iter->second;
         int r;
         tprintf("REMOTE RELEASE %llu\n", rlk->lid);
+        lu->dorelease(rlk->lid);
         cl->call(lock_protocol::release, rlk->lid, id, r);
         delete rlk;
     }

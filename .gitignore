@@ -100,3 +100,8 @@ lock_tester
 rpc/rpctest
 yfs_client
 yfs_client.cc.orig
+
+
+core
+test-lab-3-b
+test-lab-3-c

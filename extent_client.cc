@@ -7,6 +7,22 @@
 #include <unistd.h>
 #include <time.h>
 
+namespace {
+
+inline bool isfile(extent_protocol::extentid_t id) {
+    if (id & 0x80000000) {
+        return true;
+    }
+    return false;
+}
+
+inline bool isdir(extent_protocol::extentid_t id) {
+    return !isfile(id);
+}
+
+}
+
+
 // The calls assume that the caller holds a lock on the extent
 
 extent_client::extent_client(std::string dst) {
@@ -20,23 +36,29 @@ extent_client::extent_client(std::string dst) {
 
 extent_protocol::status
 extent_client::get(extent_protocol::extentid_t eid, std::string &buf) {
-    //decltype(cache_.begin()) iter;
+    decltype(cache_.begin()) iter;
     {
         std::unique_lock<std::mutex> m_(cache_mtx_);
-        auto iter = cache_.find(eid);
-        if (cache_.end() != iter) {
+        iter = cache_.find(eid);
+        if (cache_.end() != iter && (iter->second.status == extent_protocol::ALL_CACHED) ) {
             buf = iter->second.buf;
+            iter->second.attr.atime = std::time(nullptr);
             return extent_protocol::OK;
         }
     }
 
-    extent_protocol::attr attr;
     cl->call(extent_protocol::get, eid, buf);
-    getattr(eid, attr);
-    attr.atime = std::time(nullptr);
 
-    std::unique_lock<std::mutex> m_(cache_mtx_);
-    cache_[eid] = {eid, attr, buf, false};
+    if (cache_.end() != iter) {
+        iter->second.buf = buf;
+        iter->second.attr.atime = std::time(nullptr);
+        iter->second.status = extent_protocol::ALL_CACHED;
+    } else {
+        extent_protocol::attr attr;
+        getattr(eid, attr);
+        std::unique_lock<std::mutex> m_(cache_mtx_);
+        cache_[eid] = {eid, attr, buf, false, extent_protocol::ALL_CACHED};
+    }
 
     return extent_protocol::OK;
 }
@@ -44,10 +66,14 @@ extent_client::get(extent_protocol::extentid_t eid, std::string &buf) {
 extent_protocol::status
 extent_client::getattr(extent_protocol::extentid_t eid,
                        extent_protocol::attr &attr) {
+    if (isdir(eid)) {
+        return cl->call(extent_protocol::getattr, eid, attr);
+    }
+    decltype(cache_.begin()) iter;
     {
         std::unique_lock<std::mutex> m_(cache_mtx_);
-        auto iter = cache_.find(eid);
-        if (cache_.end() != iter) {
+        iter = cache_.find(eid);
+        if (cache_.end() != iter && (iter->second.status & extent_protocol::ATTR_CACHED) ) {
             attr = iter->second.attr;
             return extent_protocol::OK;
         }
@@ -55,19 +81,32 @@ extent_client::getattr(extent_protocol::extentid_t eid,
 
     extent_protocol::status ret = extent_protocol::OK;
     ret = cl->call(extent_protocol::getattr, eid, attr);
+    
+    if (cache_.end() != iter) {
+        iter->second.attr = attr;
+        iter->second.status |= extent_protocol::ATTR_CACHED;
+    } else {
+        std::unique_lock<std::mutex> m_(cache_mtx_);
+        cache_[eid] = {eid, attr, std::string(), false, extent_protocol::ATTR_CACHED};
+    }
+
     return ret;
 }
 
 extent_protocol::status
 extent_client::put(extent_protocol::extentid_t eid, std::string buf) {
+    decltype(cache_.begin()) iter;
     {
         std::unique_lock<std::mutex> m_(cache_mtx_);
-        auto iter = cache_.find(eid);
-        if (cache_.end() != iter) {
+        iter = cache_.find(eid);
+        if (cache_.end() != iter && (iter->second.status == extent_protocol::ALL_CACHED)) {
             iter->second.buf = buf;
             iter->second.attr.mtime = iter->second.attr.atime = std::time(nullptr);
             iter->second.attr.size = buf.size();
+            iter->second.modified = true;
             return extent_protocol::OK;
+        } else if (cache_.end() != iter) {
+            cache_.erase(iter);
         }
     }
 
@@ -104,4 +143,30 @@ extent_protocol::status extent_client::lookup(extent_protocol::extentid_t pid, s
 }
 extent_protocol::status extent_client::readdir(extent_protocol::extentid_t pid, std::map<std::string, extent_protocol::extentid_t> &ents){
     return cl->call(extent_protocol::readdir, pid, ents);
+}
+
+extent_protocol::status extent_client::flush(extent_protocol::extentid_t id) {
+    if (isdir(id) ) {
+        return extent_protocol::OK;
+    }
+
+    extent_cache cache;
+    {
+        std::unique_lock<std::mutex> m_(cache_mtx_);
+        auto iter = cache_.find(id);
+        if (cache_.end() != iter) {
+            cache = iter->second;
+            cache_.erase(iter);
+        } else {
+            return extent_protocol::OK;
+        }
+    }
+
+    if (cache.modified) {
+        int r;
+        cl->call(extent_protocol::flush, id, cache.buf, cache.attr, cache.status, r);
+
+    }
+
+    return extent_protocol::OK;
 }

@@ -19,6 +19,7 @@ class extent_client {
         extent_protocol::attr attr;
         std::string buf;
         bool modified;
+        int status;
     };
     
     std::map<extent_protocol::extentid_t, extent_cache> cache_;
@@ -36,6 +37,8 @@ class extent_client {
     extent_protocol::status put(extent_protocol::extentid_t eid, std::string buf);
 
     extent_protocol::status remove(extent_protocol::extentid_t eid);
+
+    extent_protocol::status flush(extent_protocol::extentid_t eid);
 //    extent_protocol::status create(bool is_dir, extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t &id);
     extent_protocol::status create(extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t id);
     extent_protocol::status lookup(extent_protocol::extentid_t pid, std::string name, extent_protocol::extentid_t &id);

@@ -139,3 +139,18 @@ int extent_server::readdir(extent_protocol::extentid_t pid, std::map<std::string
     return extent_protocol::OK;
 }
 
+int extent_server::flush(extent_protocol::extentid_t id, std::string buff, extent_protocol::attr attr, int status, int &) {
+    std::unique_lock<std::mutex> m_(mtx_);
+    auto iter = extents_.find(id);
+    if (iter != extents_.end()){
+        // update name and mtime, atime, size
+        if (status & extent_protocol::BUF_CACHED) {
+            iter->second->buf = buff;
+        }
+        if (status & extent_protocol::ATTR_CACHED) {
+            iter->second->attr = attr;
+        }
+        return extent_protocol::OK;
+    }
+    return extent_protocol::NOENT;
+}

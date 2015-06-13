@@ -14,6 +14,7 @@
 
 class yfs_client {
     extent_client *ec;
+    lock_release_user *lu;
     lock_client_cache *lc;
     std::mt19937 mt;
 
@@ -49,6 +50,7 @@ class yfs_client {
   public:
 
     yfs_client(std::string, std::string);
+    ~yfs_client();
 
     bool isfile(inum);
 
