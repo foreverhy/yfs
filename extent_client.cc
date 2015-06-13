@@ -105,14 +105,17 @@ extent_client::put(extent_protocol::extentid_t eid, std::string buf) {
             iter->second.attr.size = buf.size();
             iter->second.modified = true;
             return extent_protocol::OK;
-        } else if (cache_.end() != iter) {
-            cache_.erase(iter);
-        }
+        } 
     }
 
     extent_protocol::status ret = extent_protocol::OK;
-    int r;
-    ret = cl->call(extent_protocol::put, eid, buf, r);
+    //int r;
+    //ret = cl->call(extent_protocol::put, eid, buf, r);
+    extent_protocol::attr attr;
+    getattr(eid, attr);
+    attr.atime = attr.mtime = attr.ctime = std::time(nullptr);
+    attr.size = buf.size();
+    cache_[eid] = {eid, attr, buf, true, extent_protocol::ALL_CACHED};
     return ret;
 }
 
