@@ -49,16 +49,20 @@ extent_client::get(extent_protocol::extentid_t eid, std::string &buf) {
 
     cl->call(extent_protocol::get, eid, buf);
 
-    if (cache_.end() != iter) {
-        iter->second.buf = buf;
-        iter->second.attr.atime = std::time(nullptr);
-        iter->second.status = extent_protocol::ALL_CACHED;
-    } else {
+    {
         extent_protocol::attr attr;
         getattr(eid, attr);
         std::unique_lock<std::mutex> m_(cache_mtx_);
-        cache_[eid] = {eid, attr, buf, false, extent_protocol::ALL_CACHED};
+        if (cache_.end() != iter) {
+            iter->second.buf = buf;
+            iter->second.attr.atime = std::time(nullptr);
+            iter->second.status = extent_protocol::ALL_CACHED;
+        } else {
+            cache_[eid] = {eid, attr, buf, false, extent_protocol::ALL_CACHED};
+        }
+
     }
+
 
     return extent_protocol::OK;
 }
@@ -82,12 +86,15 @@ extent_client::getattr(extent_protocol::extentid_t eid,
     extent_protocol::status ret = extent_protocol::OK;
     ret = cl->call(extent_protocol::getattr, eid, attr);
     
-    if (cache_.end() != iter) {
-        iter->second.attr = attr;
-        iter->second.status |= extent_protocol::ATTR_CACHED;
-    } else {
+    {
         std::unique_lock<std::mutex> m_(cache_mtx_);
-        cache_[eid] = {eid, attr, std::string(), false, extent_protocol::ATTR_CACHED};
+        if (cache_.end() != iter) {
+            iter->second.attr = attr;
+            iter->second.status |= extent_protocol::ATTR_CACHED;
+        } else {
+            cache_[eid] = {eid, attr, std::string(), false, extent_protocol::ATTR_CACHED};
+        }
+
     }
 
     return ret;
@@ -96,23 +103,18 @@ extent_client::getattr(extent_protocol::extentid_t eid,
 extent_protocol::status
 extent_client::put(extent_protocol::extentid_t eid, std::string buf) {
     decltype(cache_.begin()) iter;
-    {
-        std::unique_lock<std::mutex> m_(cache_mtx_);
-        iter = cache_.find(eid);
-        if (cache_.end() != iter && (iter->second.status == extent_protocol::ALL_CACHED)) {
-            iter->second.buf = buf;
-            iter->second.attr.mtime = iter->second.attr.atime = std::time(nullptr);
-            iter->second.attr.size = buf.size();
-            iter->second.modified = true;
-            return extent_protocol::OK;
-        } 
-    }
+    std::unique_lock<std::mutex> m_(cache_mtx_);
+    iter = cache_.find(eid);
+    if (cache_.end() != iter && (iter->second.status == extent_protocol::ALL_CACHED)) {
+        iter->second.buf = buf;
+        iter->second.attr.mtime = iter->second.attr.atime = std::time(nullptr);
+        iter->second.attr.size = buf.size();
+        iter->second.modified = true;
+        return extent_protocol::OK;
+    } 
 
     extent_protocol::status ret = extent_protocol::OK;
-    //int r;
-    //ret = cl->call(extent_protocol::put, eid, buf, r);
     extent_protocol::attr attr;
-    getattr(eid, attr);
     attr.atime = attr.mtime = attr.ctime = std::time(nullptr);
     attr.size = buf.size();
     cache_[eid] = {eid, attr, buf, true, extent_protocol::ALL_CACHED};
