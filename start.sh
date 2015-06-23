@@ -35,34 +35,34 @@ if [ $NUM_LS -gt 1 ]; then
     while [ $x -lt $NUM_LS ]; do
       port=$[LOCK_PORT+2*x]
       x=$[x+1]
-      echo "starting ./lock_server $LOCK_PORT $port > lock_server$x.log 2>&1 &"
-      ./lock_server $LOCK_PORT $port > lock_server$x.log 2>&1 &
+      echo "starting ./lock_server $LOCK_PORT $port > /tmp/lock_server$x.log 2>&1 &"
+      ./lock_server $LOCK_PORT $port > /tmp/lock_server$x.log 2>&1 &
       sleep 1
     done
 else
-    echo "starting ./lock_server $LOCK_PORT > lock_server.log 2>&1 &"
-    ./lock_server $LOCK_PORT > lock_server.log 2>&1 &
+    echo "starting ./lock_server $LOCK_PORT > /tmp/lock_server.log 2>&1 &"
+    ./lock_server $LOCK_PORT > /tmp/lock_server.log 2>&1 &
     sleep 1
 fi
 
 unset RPC_LOSSY
 
-echo "starting ./extent_server $EXTENT_PORT > extent_server.log 2>&1 &"
-./extent_server $EXTENT_PORT > extent_server.log 2>&1 &
+echo "starting ./extent_server $EXTENT_PORT > /tmp/extent_server.log 2>&1 &"
+./extent_server $EXTENT_PORT > /tmp/extent_server.log 2>&1 &
 sleep 1
 
 rm -rf $YFSDIR1
 mkdir $YFSDIR1 || exit 1
 sleep 1
 echo "starting ./yfs_client $YFSDIR1 $EXTENT_PORT $LOCK_PORT > yfs_client1.log 2>&1 &"
-./yfs_client $YFSDIR1 $EXTENT_PORT $LOCK_PORT > yfs_client1.log 2>&1 &
+./yfs_client $YFSDIR1 $EXTENT_PORT $LOCK_PORT > /tmp/yfs_client1.log 2>&1 &
 sleep 1
 
 rm -rf $YFSDIR2
 mkdir $YFSDIR2 || exit 1
 sleep 1
 echo "starting ./yfs_client $YFSDIR2 $EXTENT_PORT $LOCK_PORT > yfs_client2.log 2>&1 &"
-./yfs_client $YFSDIR2 $EXTENT_PORT $LOCK_PORT > yfs_client2.log 2>&1 &
+./yfs_client $YFSDIR2 $EXTENT_PORT $LOCK_PORT > /tmp/yfs_client2.log 2>&1 &
 
 sleep 2
 
