@@ -80,6 +80,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <unistd.h>
 
 #include "handle.h"
 #include "rsm.h"
