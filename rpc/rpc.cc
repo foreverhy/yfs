@@ -206,7 +206,7 @@ rpcc::call1(unsigned int proc, marshall &req, unmarshall &rep,
 		}
 
 		if(destroy_wait_){
-		  return rpc_const::cancel_failure;
+            return rpc_const::cancel_failure;
 		}
 
 		ca.xid = xid_++;

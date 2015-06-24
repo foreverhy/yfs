@@ -148,17 +148,17 @@ proposer::prepare(unsigned instance, std::vector<std::string> &accepts,
     preparearg.n = my_n;
     paxos_protocol::prepareres prepareres;
     prop_t _na;
+    _na.n = 0;
+    _na.m = "0";
     std::string _va;
+    _va.clear();
     for (auto &node : nodes) {
         handle h(node);
         int ret = paxos_protocol::OK;
-        if (h.safebind()) {
-            ret = h.safebind()->call(paxos_protocol::preparereq, me, preparearg, prepareres, rpcc::to(1000));
-        } else {
-            accepts.clear();
-            v.clear();
-            return false;
+        if (!h.safebind()) {
+            continue;
         }
+        ret = h.safebind()->call(paxos_protocol::preparereq, me, preparearg, prepareres, rpcc::to(1000));
         if (paxos_protocol::OK == ret) {
             if (prepareres.oldinstance) {
                 acc->commit(instance, prepareres.v_a);
@@ -171,7 +171,9 @@ proposer::prepare(unsigned instance, std::vector<std::string> &accepts,
             }
         }
     }
-    v = _va;
+    if (_va.size()) {
+        v = _va;
+    }
     return true;
 }
 
@@ -189,12 +191,10 @@ proposer::accept(unsigned instance, std::vector<std::string> &accepts,
     for (auto &node : nodes) {
         handle h(node);
         int ret = paxos_protocol::OK;
-        if (h.safebind()) {
-            ret = h.safebind()->call(paxos_protocol::acceptreq, me, acceptarg, r, rpcc::to(1000));
-        } else {
-            accepts.clear();
-            return;
+        if (!h.safebind()) {
+            continue;
         }
+        ret = h.safebind()->call(paxos_protocol::acceptreq, me, acceptarg, r, rpcc::to(1000));
         
         if (paxos_protocol::OK == ret && r) {
             accepts.push_back(node);
@@ -251,9 +251,9 @@ acceptor::preparereq(std::string src, paxos_protocol::preparearg a,
     // Remember to initialize *BOTH* r.accept and r.oldinstance appropriately.
     // Remember to *log* the proposal if the proposal is accepted.
     r.accept = r.oldinstance = false;
-    if (a.instance < instance_h) {
+    if (a.instance <= instance_h) {
         r.oldinstance = true;
-        r.v_a = values[a.instance];
+        r.v_a = value(a.instance);
         return paxos_protocol::OK;
     }
 
@@ -261,7 +261,7 @@ acceptor::preparereq(std::string src, paxos_protocol::preparearg a,
         n_h = a.n;        
         r.n_a = n_a;
         r.v_a = v_a;
-        l->logprop(a.n);
+        l->logprop(n_h);
         return paxos_protocol::OK;
     } 
     return paxos_protocol::ERR;
@@ -277,11 +277,10 @@ acceptor::acceptreq(std::string src, paxos_protocol::acceptarg a, bool &r) {
         return paxos_protocol::ERR;
     }
 
-    n_h = a.n;
     n_a = a.n;
     v_a = a.v;
     r = true;
-    l->logaccept(a.n, a.v);
+    l->logaccept(n_a, v_a);
 
     return paxos_protocol::OK;
 }
