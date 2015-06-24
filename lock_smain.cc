@@ -1,5 +1,6 @@
 #include "rpc.h"
 #include <arpa/inet.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
@@ -28,16 +29,11 @@ main(int argc, char *argv[])
   setvbuf(stdout, NULL, _IONBF, 0);
   setvbuf(stderr, NULL, _IONBF, 0);
 
-  srandom(getpid());
+    srandom(getpid());
 
   if(argc != 3){
     fprintf(stderr, "Usage: %s [master:]port [me:]port\n", argv[0]);
     exit(1);
-  }
-
-  char *count_env = getenv("RPC_COUNT");
-  if(count_env != NULL){
-    count = atoi(count_env);
   }
 
   //jsl_set_debug(2);
@@ -66,6 +62,7 @@ main(int argc, char *argv[])
 #endif // RSM
 
 
-  while(1)
-    sleep(1000);
+
+    while (1)
+        sleep(1000);
 }

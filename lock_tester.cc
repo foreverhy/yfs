@@ -8,6 +8,7 @@
 #include "jsl_log.h"
 #include <signal.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 #include <vector>
 #include <stdlib.h>
 #include <stdio.h>
@@ -243,6 +244,7 @@ main(int argc, char *argv[])
 	pthread_join(th[i], NULL);
       }
     }
+    for (int i = 0; i < nt; i++) delete lc[i];
 
     printf ("%s: passed all tests successfully\n", argv[0]);
 
