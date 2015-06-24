@@ -153,7 +153,7 @@ proposer::prepare(unsigned instance, std::vector<std::string> &accepts,
         handle h(node);
         int ret = paxos_protocol::OK;
         if (h.safebind()) {
-            ret = h.safebind()->call(paxos_protocol::preparereq, me, preparearg, prepareres);
+            ret = h.safebind()->call(paxos_protocol::preparereq, me, preparearg, prepareres, rpcc::to(1000));
         } else {
             accepts.clear();
             v.clear();
@@ -190,7 +190,7 @@ proposer::accept(unsigned instance, std::vector<std::string> &accepts,
         handle h(node);
         int ret = paxos_protocol::OK;
         if (h.safebind()) {
-            ret = h.safebind()->call(paxos_protocol::acceptreq, me, acceptarg, r);
+            ret = h.safebind()->call(paxos_protocol::acceptreq, me, acceptarg, r, rpcc::to(1000));
         } else {
             accepts.clear();
             return;
@@ -214,7 +214,7 @@ proposer::decide(unsigned instance, std::vector<std::string> accepts,
     for (auto &node : accepts) {
         handle h(node);
         if (h.safebind()) {
-            h.safebind()->call(paxos_protocol::decidereq, me, decidearg, r);
+            h.safebind()->call(paxos_protocol::decidereq, me, decidearg, r, rpcc::to(1000));
         }
     }
 }
