@@ -43,6 +43,17 @@ lock_server_cache_rsm::revoker()
   // This method should be a continuous loop, that sends revoke
   // messages to lock holders whenever another client wants the
   // same lock
+    server_lock *rlk = nullptr;
+    for (;;) {
+        revoke_fifo.deq(&rlk);
+        handle h(rlk->owner);
+        auto cl = h.safebind();
+        if (cl){
+            int r;
+            tprintf("send revoke %llu to %s\n", rlk->lid, rlk->owner.data());
+            cl->call(rlock_protocol::revoke, rlk->lid, rlk->xid, r);
+        }
+    }
 }
 
 
@@ -53,23 +64,98 @@ lock_server_cache_rsm::retryer()
   // This method should be a continuous loop, waiting for locks
   // to be released and then sending retry messages to those who
   // are waiting for it.
+    re_info info;
+    for (;;) {
+        retry_fifo.deq(&info);
+        handle h(info.dst);
+        auto cl = h.safebind();
+        if (cl) {
+            int r;
+            tprintf("send retry %llu to %s\n", info.lid, info.dst.data());
+            cl->call(rlock_protocol::retry, info.lid, info.xid, r);
+        }
+    }
 }
 
 
 int lock_server_cache_rsm::acquire(lock_protocol::lockid_t lid, std::string id, 
              lock_protocol::xid_t xid, int &)
 {
-  lock_protocol::status ret = lock_protocol::OK;
-  return ret;
+    tprintf("%s acquire for %llu\n", id.data(), lid);
+    std::unique_lock<std::mutex> mtx_(mtxtb);
+    auto iter = locktb.find(lid);
+    server_lock *rlk = nullptr;
+    if (iter == locktb.end()) {
+        rlk = new server_lock(lid);
+        locktb[lid] = rlk;
+    } else {
+        rlk = iter->second;
+    }
+
+    if (rlk->owner == id) {
+        if (xid < rlk->xid) {
+            return lock_protocol::RPCERR;
+        }
+
+        if (xid == rlk->xid && server_lock::LOCKED == rlk->status) {
+            return lock_protocol::OK;
+        }
+    }
+
+    if (server_lock::FREE == rlk->status) {
+        rlk->status = server_lock::LOCKED;
+        rlk->owner = id;
+        rlk->xid = xid;
+        if (!rlk->retry.empty()) {
+            re_info info;
+            info.lid = lid;
+            info.dst = rlk->retry.front();
+            rlk->retry.pop();
+            retry_fifo.enq(info);
+        }
+        return lock_protocol::OK;
+    }
+
+    rlk->retry.push(id);
+    if (server_lock::LOCKED == rlk->status) {
+        rlk->status = server_lock::REVOKE_SENT;
+        revoke_fifo.enq(rlk);
+    }
+    return lock_protocol::RETRY;
 }
 
 int 
 lock_server_cache_rsm::release(lock_protocol::lockid_t lid, std::string id, 
          lock_protocol::xid_t xid, int &r)
 {
-  lock_protocol::status ret = lock_protocol::OK;
-  return ret;
+    tprintf("%s release %llu\n", id.data(), lid);
+    std::unique_lock<std::mutex> mtx_(mtxtb);
+
+    auto iter = locktb.find(lid);
+    server_lock *rlk = nullptr;
+
+    if (iter == locktb.end()) {
+        return lock_protocol::IOERR;
+    } else {
+        rlk = iter->second;
+    }
+
+    if (xid < rlk->xid) {
+        return lock_protocol::RPCERR;
+    }
+
+    rlk->status = server_lock::FREE;
+    if (!rlk->retry.empty()) {
+        re_info info; 
+        info.lid = lid;
+        info.dst = rlk->retry.front();
+        info.xid = rlk->xid;
+        rlk->retry.pop();
+        retry_fifo.enq(info);
+    }
+    return lock_protocol::OK;
 }
+
 
 std::string
 lock_server_cache_rsm::marshal_state()

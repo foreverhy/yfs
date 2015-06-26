@@ -22,7 +22,7 @@ handle::safebind()
   sockaddr_in dstsock;
   make_sockaddr(h->m.c_str(), &dstsock);
   rpcc *cl = new rpcc(dstsock);
-  tprintf("handler_mgr::get_handle trying to bind...%s\n", h->m.c_str());
+  //tprintf("handler_mgr::get_handle trying to bind...%s\n", h->m.c_str());
   int ret;
   // Starting with lab 6, our test script assumes that the failure
   // can be detected by paxos and rsm layer within few seconds. We have
@@ -37,7 +37,7 @@ handle::safebind()
     delete cl;
     h->del = true;
   } else {
-    tprintf("handle_mgr::get_handle bind succeeded %s\n", h->m.c_str());
+    //tprintf("handle_mgr::get_handle bind succeeded %s\n", h->m.c_str());
     h->cl = cl;
   }
   return h->cl;
