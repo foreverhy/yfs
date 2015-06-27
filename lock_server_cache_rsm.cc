@@ -46,6 +46,9 @@ lock_server_cache_rsm::revoker()
     server_lock *rlk = nullptr;
     for (;;) {
         revoke_fifo.deq(&rlk);
+        if (!rsm->amiprimary()) {
+            continue;
+        }
         handle h(rlk->owner);
         auto cl = h.safebind();
         if (cl){
@@ -67,6 +70,9 @@ lock_server_cache_rsm::retryer()
     re_info info;
     for (;;) {
         retry_fifo.deq(&info);
+        if (!rsm->amiprimary()) {
+            continue;
+        }
         handle h(info.dst);
         auto cl = h.safebind();
         if (cl) {

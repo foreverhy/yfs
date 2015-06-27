@@ -40,6 +40,7 @@ lock_client_cache_rsm::lock_client_cache_rsm(std::string xdst,
   // You fill this in Step Two, Lab 7
   // - Create rsmc, and use the object to do RPC 
   //   calls instead of the rpcc object of lock_client
+  rsmc = new rsm_client(xdst);
   //pthread_t th;
   int r = pthread_create(&th, NULL, &releasethread, (void *) this);
   VERIFY (r == 0);
@@ -55,7 +56,8 @@ lock_client_cache_rsm::racquire(client_lock *rlk, std::unique_lock<std::mutex> &
     
     for (;;){
         m_.unlock();
-        auto ret = cl->call(lock_protocol::acquire, rlk->lid, id, xid_, r);
+        //auto ret = cl->call(lock_protocol::acquire, rlk->lid, id, xid_, r);
+        auto ret = rsmc->call(lock_protocol::acquire, rlk->lid, id, xid_, r);
         m_.lock();
         if (lock_protocol::OK == ret){
             rlk->status = client_lock::LOCKED;
@@ -93,7 +95,8 @@ lock_client_cache_rsm::releaser()
         if (lu) {
             lu->dorelease(rlk->lid);
         }
-        ret = cl->call(lock_protocol::release, rlk->lid, id, rlk->xid, r);
+        //ret = cl->call(lock_protocol::release, rlk->lid, id, rlk->xid, r);
+        ret = rsmc->call(lock_protocol::release, rlk->lid, id, rlk->xid, r);
         std::lock_guard<std::mutex> m_(rlk->mtx);
         rlk->status = client_lock::NONE;
         rlk->lock_cv.notify_all();
@@ -234,7 +237,8 @@ lock_client_cache_rsm::~lock_client_cache_rsm(){
         if (lu) {
             lu->dorelease(rlk->lid);
         }
-        cl->call(lock_protocol::release, rlk->lid, id, rlk->xid, r);
+        //cl->call(lock_protocol::release, rlk->lid, id, rlk->xid, r);
+        rsmc->call(lock_protocol::release, rlk->lid, id, rlk->xid, r);
         delete rlk;
     }
     rlk = new client_lock(0);
