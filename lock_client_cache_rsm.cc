@@ -233,13 +233,11 @@ lock_client_cache_rsm::~lock_client_cache_rsm(){
     client_lock *rlk = nullptr;
     for (auto iter = rlocktb.begin(); iter != rlocktb.end(); ++iter) {
         rlk = iter->second;
-        int r;
-        tprintf("REMOTE RELEASE %llu\n", rlk->lid);
-        if (lu) {
-            lu->dorelease(rlk->lid);
+        std::lock_guard<std::mutex> m_(rlk->mtx);
+        if (rlk->status == client_lock::RELEASING || rlk->status == client_lock::NONE) {
+            continue;
         }
-        rsmc->call(lock_protocol::release, rlk->lid, id, rlk->xid, r);
-        delete rlk;
+        release_fifo.enq(rlk);
     }
     rlk = new client_lock(0);
     rlk->nrevoke = -1;

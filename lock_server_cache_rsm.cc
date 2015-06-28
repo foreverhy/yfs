@@ -148,11 +148,17 @@ lock_server_cache_rsm::release(lock_protocol::lockid_t lid, std::string id,
         rlk = iter->second;
     }
 
-    if (xid < rlk->xid) {
+    if (id != rlk->owner) {
+        return lock_protocol::IOERR;
+    }
+
+    if (xid != rlk->xid) {
         return lock_protocol::RPCERR;
     }
 
     rlk->status = server_lock::FREE;
+    rlk->owner.clear();
+    rlk->xid = 0;
     if (!rlk->retry.empty()) {
         re_info info; 
         info.lid = lid;

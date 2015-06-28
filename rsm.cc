@@ -392,7 +392,7 @@ rsm::execute(int procno, std::string req, std::string &r)
 rsm_client_protocol::status
 rsm::client_invoke(int procno, std::string req, std::string &r)
 {
-    int ret = rsm_client_protocol::BUSY;
+    int ret = rsm_protocol::BUSY;
     // You fill this in for Lab 7
     ScopedLock ml(&invoke_mutex);
     if (inviewchange) {
@@ -415,6 +415,11 @@ rsm::client_invoke(int procno, std::string req, std::string &r)
         if (rsm_protocol::OK != ret) {
             return rsm_client_protocol::BUSY;
         }
+        breakpoint1();
+        partition1();
+    }
+    if (rsm_protocol::OK != ret) {
+        return rsm_client_protocol::BUSY;
     }
     execute(procno, req, r);
     last_myvs = myvs;
@@ -448,6 +453,7 @@ rsm::invoke(int proc, viewstamp vs, std::string req, int &dummy)
 
     last_myvs = myvs;
     (myvs.seqno)++;
+    breakpoint1();
 
     return ret;
 }
