@@ -7,8 +7,11 @@
 #include <iostream>
 #include <stdio.h>
 #include "tprintf.h"
+#include "marshall.h"
 
 #include "rsm_client.h"
+
+#include <chrono>
 
 static void *
 releasethread(void *x)
@@ -67,7 +70,7 @@ lock_client_cache_rsm::racquire(client_lock *rlk, std::unique_lock<std::mutex> &
                 rlk->nretry = 0;
                 continue;
             }
-            rlk->retry_cv.wait(m_, [&](){ return rlk->nretry;});
+            rlk->retry_cv.wait_for(m_, std::chrono::seconds(3), [&](){ return rlk->nretry;});
             rlk->nretry = 0;
         } else {
             return ret;
